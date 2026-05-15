@@ -1,0 +1,3181 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Predictive Maintenance Decision Dashboard for Industrial Equipment</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        :root {
+            --ink: #1d2428;
+            --muted: #66737a;
+            --line: #dfe5e8;
+            --paper: #f7f8f5;
+            --surface: #ffffff;
+            --green: #24875d;
+            --yellow: #b7791f;
+            --red: #c2413f;
+            --deep-red: #991b1b;
+            --teal: #247b7b;
+            --orange: #e85d04;
+            --shadow: 0 14px 30px rgba(40, 53, 58, 0.08);
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            color: var(--ink);
+            background: var(--paper);
+            font-family: Inter, 'Segoe UI', Arial, sans-serif;
+            padding: 20px;
+        }
+
+        .topbar {
+            padding: 20px;
+            background: #263235;
+            color: #ffffff;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .topbar h1 {
+            margin: 0;
+            font-size: 1.5rem;
+        }
+
+        .topbar p {
+            margin: 5px 0 0 0;
+            color: #a9b5b9;
+            font-size: 0.9rem;
+        }
+
+        .scenario-grid {
+            display: grid;
+            grid-template-columns: minmax(0, 0.95fr) minmax(320px, 0.75fr);
+            gap: 18px;
+        }
+
+        .panel {
+            padding: 20px;
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            background: var(--surface);
+            box-shadow: var(--shadow);
+        }
+
+        .panel-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            border-bottom: 1px solid var(--line);
+            padding-bottom: 15px;
+            margin-bottom: 15px;
+        }
+
+        .panel-head h2 {
+            margin: 0;
+            font-size: 1.2rem;
+        }
+
+        .panel-head p {
+            margin: 4px 0 0;
+            color: var(--muted);
+            font-size: 0.85rem;
+        }
+
+        /* Presets Area */
+        .preset-area {
+            margin-bottom: 20px;
+            padding: 15px;
+            border: 1px solid #e4ecef;
+            border-radius: 8px;
+            background: #fbfcfc;
+        }
+
+        .preset-area span {
+            display: block;
+            color: var(--muted);
+            font-size: 0.76rem;
+            font-weight: 760;
+            text-transform: uppercase;
+            margin-bottom: 10px;
+        }
+
+        .preset-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+        }
+
+        .preset-button {
+            padding: 8px;
+            border: 1px solid var(--line);
+            border-radius: 6px;
+            background: #fff;
+            color: var(--ink);
+            font-size: 0.75rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.2s;
+            text-align: center;
+        }
+
+        .preset-button:hover {
+            border-color: var(--teal);
+            color: var(--teal);
+        }
+
+        .preset-button.active {
+            background: var(--teal);
+            color: #fff;
+            border-color: var(--teal);
+        }
+
+        .controls-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 16px;
+        }
+
+        label {
+            display: grid;
+            gap: 8px;
+            color: var(--muted);
+            font-size: 0.82rem;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        select,
+        input[type="range"] {
+            width: 100%;
+            min-height: 38px;
+        }
+
+        select {
+            border: 1px solid var(--line);
+            border-radius: 6px;
+            padding: 8px;
+            background: #ffffff;
+            font-weight: bold;
+        }
+
+        input[type="range"] {
+            accent-color: var(--teal);
+        }
+
+        output {
+            color: var(--ink);
+            font-size: 0.95rem;
+            font-weight: 700;
+        }
+
+        .price-input-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            color: var(--ink);
+            font-size: 0.95rem;
+            font-weight: 700;
+        }
+
+        .price-input-wrapper input[type="text"] {
+            border: 1px solid var(--line);
+            border-radius: 4px;
+            font-weight: 700;
+            font-size: 0.95rem;
+            color: var(--ink);
+            font-family: inherit;
+            width: 100%;
+            padding: 4px 8px;
+            background: #fff;
+            transition: 0.2s;
+            min-height: auto;
+        }
+
+        .price-input-wrapper input[type="text"]:focus {
+            border-color: var(--teal);
+            outline: none;
+        }
+
+        .scenario-result {
+            display: grid;
+            gap: 18px;
+            align-content: start;
+        }
+
+        /* Ruleset Alert */
+        .alert-status {
+            padding: 15px;
+            border-radius: 8px;
+            color: #ffffff;
+            transition: 0.3s;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            cursor: help;
+        }
+
+        .ruleset-tooltip {
+            visibility: hidden;
+            opacity: 0;
+            position: absolute;
+            top: 100%;
+            left: 0;
+            margin-top: 10px;
+            background: #fff;
+            border: 1px solid #cbd5e1;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+            padding: 15px;
+            width: 480px;
+            z-index: 100;
+            transition: 0.2s;
+            pointer-events: none;
+            color: var(--ink);
+        }
+
+        .alert-status:hover .ruleset-tooltip {
+            visibility: visible;
+            opacity: 1;
+        }
+
+        .ruleset-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.75rem;
+            color: var(--ink);
+        }
+
+        .ruleset-table th,
+        .ruleset-table td {
+            text-align: left;
+            padding: 6px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .ruleset-table th {
+            background: #f8fafc;
+            color: var(--muted);
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        .ruleset-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .alert-status span.rule-badge {
+            display: inline-block;
+            background: rgba(0, 0, 0, 0.2);
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            font-weight: bold;
+            margin-bottom: 8px;
+            align-self: flex-start;
+            text-transform: uppercase;
+        }
+
+        .alert-status strong {
+            font-size: 1.4rem;
+            margin-bottom: 4px;
+        }
+
+        .alert-status span.desc {
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+
+        .alert-status.green {
+            background: var(--green);
+        }
+
+        .alert-status.yellow {
+            background: var(--yellow);
+            color: #fff;
+        }
+
+        .alert-status.orange {
+            background: var(--orange);
+        }
+
+        .alert-status.red {
+            background: var(--red);
+        }
+
+        .alert-status.deep-red {
+            background: var(--deep-red);
+        }
+
+        /* Cost Verdict (Moved Up) */
+        .cost-verdict {
+            padding: 16px;
+            border-radius: 8px;
+            border: 1px solid var(--line);
+            background: #f8faf9;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .cost-text {
+            flex-grow: 1;
+        }
+
+        .cost-verdict span {
+            display: block;
+            color: var(--muted);
+            font-size: 0.78rem;
+            font-weight: 760;
+            text-transform: uppercase;
+        }
+
+        .cost-verdict strong {
+            display: block;
+            font-size: 1.45rem;
+            margin-top: 5px;
+        }
+
+        .cost-verdict small {
+            display: block;
+            margin-top: 5px;
+            color: var(--muted);
+            font-size: 0.85rem;
+        }
+
+        .cost-verdict.saving {
+            border-color: rgba(36, 135, 93, 0.35);
+            background: #edf8f3;
+        }
+
+        .cost-verdict.saving strong {
+            color: var(--green);
+        }
+
+        .cost-verdict.normal {
+            border-color: #cbd5e1;
+            background: #f8fafc;
+        }
+
+        .cost-verdict.normal strong {
+            color: #64748b;
+        }
+
+        /* Risk Meter */
+        .risk-meter {
+            padding: 18px;
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            background: #fbfcfc;
+        }
+
+        .risk-meter span {
+            display: block;
+            color: var(--muted);
+            font-size: 0.8rem;
+            font-weight: bold;
+            text-transform: uppercase;
+            margin-bottom: 5px;
+        }
+
+        .risk-meter strong {
+            font-size: 2.5rem;
+            display: block;
+            margin-bottom: 15px;
+        }
+
+        .meter-track {
+            height: 12px;
+            border-radius: 999px;
+            background: #e9eef0;
+            overflow: hidden;
+        }
+
+        .meter-track div {
+            height: 100%;
+            background: var(--green);
+            transition: 0.3s;
+            width: 0%;
+        }
+
+        /* Mini KPIs */
+        .mini-kpis {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+        }
+
+        .mini-kpis div {
+            padding: 12px;
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            background: #fbfcfc;
+        }
+
+        .mini-kpis span {
+            display: block;
+            color: var(--muted);
+            font-size: 0.70rem;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+
+        .mini-kpis strong {
+            display: block;
+            margin-top: 6px;
+            font-size: 1.05rem;
+        }
+
+        .tradeoff-panel {
+            margin-top: 22px;
+            padding: 18px;
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            background: linear-gradient(135deg, #fbfcfc 0%, #f3f7f7 100%);
+        }
+
+        .tradeoff-panel h3,
+        .cost-summary-panel h3 {
+            margin: 0 0 8px 0;
+            font-size: 0.92rem;
+            text-transform: uppercase;
+            color: var(--muted);
+        }
+
+        .tradeoff-panel p,
+        .cost-summary-panel p {
+            margin: 0;
+            color: var(--muted);
+            font-size: 0.82rem;
+        }
+
+        .tradeoff-cost-controls {
+            margin-top: 16px;
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 14px;
+        }
+
+        .tradeoff-toolbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .tradeoff-cost-controls label {
+            padding: 12px;
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            background: #fff;
+        }
+
+        .tradeoff-summary {
+            margin-top: 14px;
+            padding: 12px 14px;
+            border-radius: 8px;
+            border: 1px solid #d7e1e4;
+            background: #fff;
+            color: var(--ink);
+            font-size: 0.88rem;
+        }
+
+        .tradeoff-summary.alert {
+            border-color: rgba(194, 65, 63, 0.28);
+            background: #fff2f1;
+        }
+
+        .tradeoff-summary.good {
+            border-color: rgba(36, 135, 93, 0.28);
+            background: #eef8f2;
+        }
+
+        .tradeoff-panel .cost-verdict {
+            margin-top: 14px;
+        }
+
+        .cost-summary-panel {
+            margin-top: 18px;
+            padding: 18px;
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            background: #fbfcfc;
+        }
+
+        .cost-summary-panel.hidden {
+            display: none;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .summary-toolbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 14px;
+        }
+
+        .summary-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .summary-card {
+            padding: 12px 14px;
+            border-radius: 8px;
+            border: 1px solid var(--line);
+            background: #fff;
+        }
+
+        .summary-card span {
+            display: block;
+            color: var(--muted);
+            font-size: 0.72rem;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        .summary-card strong {
+            display: block;
+            margin-top: 6px;
+            font-size: 1.15rem;
+        }
+
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 14px;
+        }
+
+        .summary-chart {
+            padding: 14px;
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            background: #fff;
+        }
+
+        .summary-chart h4 {
+            margin: 0 0 10px 0;
+            font-size: 0.82rem;
+            color: var(--muted);
+            text-transform: uppercase;
+        }
+
+        .summary-total-line {
+            margin-top: 12px;
+            padding-top: 10px;
+            border-top: 1px solid var(--line);
+            color: var(--muted);
+            font-size: 0.78rem;
+        }
+
+        .summary-bars {
+            display: grid;
+            gap: 10px;
+        }
+
+        .summary-row {
+            display: grid;
+            grid-template-columns: 72px 1fr 70px;
+            gap: 10px;
+            align-items: center;
+            font-size: 0.78rem;
+        }
+
+        .summary-row label {
+            display: block;
+            color: var(--muted);
+            font-size: 0.74rem;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        .summary-track {
+            position: relative;
+            height: 16px;
+            border-radius: 999px;
+            overflow: hidden;
+            background: #edf2f4;
+        }
+
+        .summary-track .spent-bar,
+        .summary-track .savings-bar {
+            position: absolute;
+            top: 0;
+            left: 0;
+            height: 100%;
+            border-radius: 999px;
+        }
+
+        .summary-track .spent-bar {
+            background: var(--teal);
+            opacity: 0.95;
+        }
+
+        .summary-track .savings-bar {
+            background: rgba(36, 135, 93, 0.42);
+        }
+
+        .summary-value {
+            text-align: right;
+            font-weight: 700;
+            color: var(--ink);
+        }
+
+        /* Diverging Bar Chart for Log-Odds */
+        .impact-row {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+            font-size: 0.85rem;
+        }
+
+        .impact-name {
+            width: 100px;
+            color: var(--muted);
+            font-weight: 600;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            text-align: right;
+            padding-right: 10px;
+        }
+
+        .bar-wrapper {
+            flex-grow: 1;
+            position: relative;
+            height: 16px;
+            background: #f0f4f8;
+            border-radius: 2px;
+        }
+
+        .bar-axis {
+            position: absolute;
+            left: 50%;
+            top: -4px;
+            bottom: -4px;
+            width: 2px;
+            background: #94a3b8;
+            z-index: 2;
+        }
+
+        .bar-fill {
+            position: absolute;
+            height: 100%;
+            top: 0;
+            transition: 0.3s;
+            z-index: 1;
+        }
+
+        .bar-pos {
+            background: var(--red);
+            left: 50%;
+            border-radius: 0 2px 2px 0;
+        }
+
+        .bar-neg {
+            background: var(--green);
+            right: 50%;
+            border-radius: 2px 0 0 2px;
+        }
+
+        .impact-val {
+            width: 55px;
+            text-align: right;
+            font-weight: bold;
+            font-family: monospace;
+            padding-left: 10px;
+        }
+
+        @media (max-width: 900px) {
+            .scenario-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .controls-grid,
+            .preset-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .cost-verdict {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 15px;
+            }
+
+            .tradeoff-columns,
+            .tradeoff-cost-controls,
+            .summary-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Reference Table */
+        .reference-table-container {
+            margin-top: 25px;
+            padding-top: 15px;
+            border-top: 1px solid var(--line);
+        }
+
+        .reference-table-container h3 {
+            margin: 0 0 10px 0;
+            font-size: 0.85rem;
+            color: var(--muted);
+            text-transform: uppercase;
+        }
+
+        .reference-table-wrapper {
+            border: 1px solid var(--line);
+            border-radius: 6px;
+            overflow: hidden;
+        }
+
+        .reference-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.82rem;
+            background: #fff;
+            margin: 0;
+        }
+
+        .reference-table th,
+        .reference-table td {
+            padding: 8px 12px;
+            text-align: left;
+            border-bottom: 1px solid var(--line);
+        }
+
+        .reference-table th {
+            background: #f8fafc;
+            font-weight: 700;
+            color: var(--muted);
+            text-transform: uppercase;
+            font-size: 0.75rem;
+        }
+
+        .reference-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .reference-table td.cost-col {
+            text-align: right;
+            font-weight: 700;
+        }
+
+        .reference-table td.cost-col.preventive {
+            color: var(--teal);
+        }
+
+        .reference-table td.cost-col.corrective {
+            color: var(--red);
+        }
+
+        /* KPI Cards */
+        .kpi-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            padding: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .kpi-card {
+            background: #fff;
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            padding: 15px;
+            text-align: center;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+            position: relative;
+            cursor: help;
+            transition: border-color 0.2s;
+        }
+
+        .kpi-card:hover {
+            border-color: var(--teal);
+        }
+
+        .kpi-tooltip {
+            visibility: hidden;
+            opacity: 0;
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            margin-top: 10px;
+            background: #1e293b;
+            color: #fff;
+            border-radius: 6px;
+            padding: 12px 15px;
+            width: max-content;
+            max-width: 350px;
+            z-index: 200;
+            transition: 0.2s;
+            pointer-events: none;
+            font-size: 0.75rem;
+            text-align: left;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+        }
+
+        .hover-container {
+            position: relative;
+            cursor: help;
+        }
+
+        .kpi-card:hover .kpi-tooltip,
+        .hover-container:hover .kpi-tooltip {
+            visibility: visible;
+            opacity: 1;
+        }
+
+        .kpi-card h4 {
+            margin: 0;
+            font-size: 0.8rem;
+            color: var(--muted);
+            text-transform: uppercase;
+        }
+
+        .kpi-card .kpi-value {
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: var(--teal);
+            margin-top: 5px;
+        }
+
+        .kpi-card.financial .kpi-value {
+            color: var(--green);
+        }
+    </style>
+</head>
+
+<body>
+
+    <header class="topbar">
+        <h1>Predictive Maintenance Decision Dashboard</h1>
+    </header>
+
+    <div
+        style="max-width: 1200px; margin: 20px auto; display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; padding: 0 20px;">
+        <div
+            style="background: white; padding: 20px; border-radius: 8px; border: 1px solid var(--line); box-shadow: var(--shadow);">
+            <div
+                style="font-size: 0.75rem; color: var(--muted); text-transform: uppercase; font-weight: bold; margin-bottom: 5px;">
+                Total Runtime</div>
+            <div style="font-size: 1.6rem; font-weight: 700; color: var(--ink);">392,443 <small
+                    style="font-size: 0.9rem; font-weight: 400; color: var(--muted);">Hrs</small></div>
+        </div>
+        <div
+            style="background: white; padding: 20px; border-radius: 8px; border: 1px solid var(--line); box-shadow: var(--shadow);">
+            <div
+                style="font-size: 0.75rem; color: var(--muted); text-transform: uppercase; font-weight: bold; margin-bottom: 5px;">
+                Total Downtime</div>
+            <div style="font-size: 1.6rem; font-weight: 700; color: var(--red);">8,625 <small
+                    style="font-size: 0.9rem; font-weight: 400; color: var(--muted);">Hrs</small></div>
+        </div>
+        <div
+            style="background: white; padding: 20px; border-radius: 8px; border: 1px solid var(--line); box-shadow: var(--shadow);">
+            <div
+                style="font-size: 0.75rem; color: var(--muted); text-transform: uppercase; font-weight: bold; margin-bottom: 5px;">
+                Total Machines</div>
+            <div style="font-size: 1.6rem; font-weight: 700; color: var(--ink);">3,865 <small
+                    style="font-size: 0.9rem; font-weight: 400; color: var(--muted);">Units</small></div>
+        </div>
+    </div>
+
+    <h3
+        style="max-width: 1200px; margin: 25px auto 0; padding: 0 20px; font-size: 0.85rem; color: var(--muted); text-transform: uppercase;">
+        Factory Operations KPIs</h3>
+    <section class="kpi-container" style="padding-top: 10px;">
+        <div class="kpi-card">
+            <h4>OEE</h4>
+            <div class="kpi-value" id="kpiOeeTop">--</div>
+            <div class="kpi-tooltip"><strong>Overall Equipment Effectiveness</strong><br>The gold standard for measuring
+                manufacturing productivity (Availability × Performance × Quality).</div>
+        </div>
+
+        <div class="kpi-card">
+            <h4>Availability</h4>
+            <div class="kpi-value" id="kpiAvailTop">--</div>
+            <div class="kpi-tooltip"><strong>Availability</strong><br>The ratio of actual operating time to planned
+                production time. Takes into account Downtime Loss.</div>
+        </div>
+        <div class="kpi-card">
+            <h4>Performance</h4>
+            <div class="kpi-value" id="kpiPerfTop">--</div>
+            <div class="kpi-tooltip"><strong>Performance</strong><br>How well the machines are running compared to their
+                designed maximum speed (Ideal Cycle Time).</div>
+        </div>
+        <div class="kpi-card">
+            <h4>Quality</h4>
+            <div class="kpi-value" id="kpiQualTop">--</div>
+            <div class="kpi-tooltip"><strong>Quality</strong><br>The ratio of good units produced out of the total units
+                started.</div>
+        </div>
+        <div class="kpi-card">
+            <h4>MTBF (Hrs)</h4>
+            <div class="kpi-value" id="kpiMtbfTop">--</div>
+            <div class="kpi-tooltip"><strong>Mean Time Between Failures</strong><br>The average operational hours
+                between system breakdowns.</div>
+        </div>
+        <div class="kpi-card financial">
+            <h4>Total Cost Savings After Using Model</h4>
+            <div class="kpi-value" id="kpiSavingsTop">--</div>
+            <div class="kpi-tooltip"><strong>Total Financial Savings</strong><br>The total estimated cost saved across
+                all machines by using this ML model to avoid catastrophic failures.</div>
+        </div>
+    </section>
+
+    <h3
+        style="max-width: 1200px; margin: 10px auto 0; padding: 0 20px; font-size: 0.85rem; color: var(--muted); text-transform: uppercase;">
+        ML Model Performance (Logistic Regression)</h3>
+    <section class="kpi-container" style="padding-top: 10px; margin-bottom: 20px;">
+        <div class="kpi-card">
+            <h4>Accuracy Score</h4>
+            <div class="kpi-value">92.00%</div>
+            <div class="kpi-tooltip"><strong>Accuracy Score</strong><br>The overall correctness of the model across all
+                predictions.</div>
+        </div>
+        <div class="kpi-card">
+            <h4>Recall</h4>
+            <div class="kpi-value">89.00%</div>
+            <div class="kpi-tooltip"><strong>Recall (Sensitivity)</strong><br>The model's ability to successfully find
+                and predict actual machine failures.</div>
+        </div>
+        <div class="kpi-card">
+            <h4>F1 Score</h4>
+            <div class="kpi-value">92.00%</div>
+            <div class="kpi-tooltip"><strong>F1 Score</strong><br>The harmonic mean of precision and recall, ensuring a
+                balanced model.</div>
+        </div>
+        <div class="kpi-card">
+            <h4>ROC-AUC</h4>
+            <div class="kpi-value">0.9997</div>
+            <div class="kpi-tooltip"><strong>ROC-AUC Score</strong><br><img src="ROC-image.png" alt="ROC Curve"
+                    style="max-width: 100%; height: auto; margin-top: 5px; margin-bottom: 5px; border-radius: 4px;"><br>The
+                Area Under the Receiver Operating Characteristic Curve (0.9997 rounded to 4 decimal places). Measures
+                the model's ability to distinguish between classes.</div>
+        </div>
+    </section>
+
+    <main class="scenario-grid">
+
+        <div class="panel" style="grid-column: 1 / -1; margin-bottom: 20px;">
+            <div class="panel-head">
+                <div>
+                    <h2>Fleet-Level Risk Treemap (Live Plant View)</h2>
+                    <p>Overview of the factory</p>
+                </div>
+            </div>
+
+            <div id="fleetTreemap"
+                style="display: flex; flex-wrap: wrap; gap: 6px; padding: 15px; background: #f0f4f8; border-radius: 6px; min-height: 250px; align-items: stretch;">
+            </div>
+            <div style="display: flex; gap: 15px; margin-top: 15px; font-size: 0.8rem; justify-content: center;">
+                <span style="color: var(--green);"><i class="fa-solid fa-square"></i> Normal (<30%)< /span>
+                        <span style="color: var(--yellow);"><i class="fa-solid fa-square"></i> Monitor (30-50%)</span>
+                        <span style="color: var(--orange);"><i class="fa-solid fa-square"></i> Risk (50-60%)</span>
+                        <span style="color: var(--red);"><i class="fa-solid fa-square"></i> Critical (60-80%)</span>
+                        <span style="color: var(--deep-red);"><i class="fa-solid fa-square"></i> Emergency (>80%)</span>
+            </div>
+
+            <div class="risk-trend-panel"
+                style="margin-top: 30px; padding-top: 20px; border-top: 1px solid var(--line);">
+                <div class="panel-head"
+                    style="border: none; padding-bottom: 10px; display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <h2 style="font-size: 1.1rem; margin: 0;">Risk Trend Analysis</h2>
+                        <p style="margin: 4px 0 0; font-size: 0.85rem; color: var(--muted);">Aggregated failure counts
+                            from historical plant data.</p>
+                    </div>
+                    <div id="riskToggles" style="display: flex; gap: 6px; flex-wrap: wrap;">
+                        <button class="preset-button active" onclick="toggleRiskSeries('TWF')" id="toggle-TWF"
+                            style="padding: 4px 10px; font-size: 0.7rem; border-color: #3b82f6; background: #3b82f6; color: #fff;">Tool
+                            Wear Failure (TWF)</button>
+                        <button class="preset-button active" onclick="toggleRiskSeries('HDF')" id="toggle-HDF"
+                            style="padding: 4px 10px; font-size: 0.7rem; border-color: #ef4444; background: #ef4444; color: #fff;">Heat
+                            Dissipation Failure (HDF)</button>
+                        <button class="preset-button active" onclick="toggleRiskSeries('PWF')" id="toggle-PWF"
+                            style="padding: 4px 10px; font-size: 0.7rem; border-color: #f59e0b; background: #f59e0b; color: #fff;">Power
+                            Failure (PWF)</button>
+                        <button class="preset-button active" onclick="toggleRiskSeries('OSF')" id="toggle-OSF"
+                            style="padding: 4px 10px; font-size: 0.7rem; border-color: #8b5cf6; background: #8b5cf6; color: #fff;">Overstrain
+                            Failure (OSF)</button>
+                        <button class="preset-button active" onclick="toggleRiskSeries('RNF')" id="toggle-RNF"
+                            style="padding: 4px 10px; font-size: 0.7rem; border-color: #10b981; background: #10b981; color: #fff;">Random
+                            Failures (RNF)</button>
+                    </div>
+                </div>
+                <div id="trendChartContainer"
+                    style="height: 280px; position: relative; background: #ffffff; border-radius: 8px; padding: 15px; border: 1px solid #e2e8f0; display: flex; align-items: center; justify-content: center;">
+                    <div id="trendLoading" style="color: var(--muted); font-size: 0.9rem;"><i
+                            class="fa-solid fa-circle-notch fa-spin"></i> Loading historical data...</div>
+                    <canvas id="riskTrendChart" style="display: none;"></canvas>
+                </div>
+            </div>
+
+            <section class="tradeoff-panel">
+                <div class="tradeoff-toolbar">
+                    <h3>Financial Trade-off Analysis</h3>
+                    <button class="preset-button" onclick="resetTradeoffCosts()" style="padding: 6px 12px;">Reset
+                        Costs</button>
+                </div>
+                <div class="tradeoff-cost-controls">
+                </div>
+                <div id="tradeoffSummary" class="tradeoff-summary">
+                    Waiting for scenario inputs.
+                </div>
+            </section>
+
+            <section class="cost-summary-panel">
+                <div class="summary-toolbar">
+                    <div>
+                        <h3>Monthly And Machine-Type Cost View</h3>
+                    </div>
+                </div>
+                <div id="costSummaryContent">
+                    <div class="summary-cards">
+                        <div class="summary-card">
+                            <span>Total Spend After Model</span>
+                            <strong id="summaryTotalAfter">฿ 0</strong>
+                        </div>
+                        <div class="summary-card">
+                            <span>Total Cost Before Model</span>
+                            <strong id="summaryTotalBefore">฿ 0</strong>
+                        </div>
+                        <div class="summary-card">
+                            <span>Total Savings</span>
+                            <strong id="summaryTotalSavings">฿ 0</strong>
+                        </div>
+                    </div>
+                    <div class="summary-grid">
+                        <div class="summary-chart">
+                            <h4>Cost By Month</h4>
+                            <div id="monthlyCostBars" class="summary-bars"></div>
+                            <div id="monthlyTotalsLine" class="summary-total-line"></div>
+                        </div>
+                        <div class="summary-chart">
+                            <h4>Cost By Machine Type</h4>
+                            <div id="typeCostBars" class="summary-bars"></div>
+                            <div id="typeTotalsLine" class="summary-total-line"></div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <div class="panel">
+            <div class="panel-head">
+                <div>
+                    <h2>Machine Configuration</h2>
+                    <p>Select a preset or manually adjust variables.</p>
+                </div>
+            </div>
+
+            <div class="preset-area">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                    <span style="margin-bottom: 0;">Load Scenario Presets</span>
+                    <button class="preset-button" onclick="applyPreset('default')" style="padding: 4px 10px;"><i
+                            class="fa-solid fa-rotate-left"></i> Reset</button>
+                </div>
+                <div class="preset-grid">
+                    <button class="preset-button active" id="btn-default" onclick="applyPreset('default')">Default
+                        (Safe)</button>
+                    <button class="preset-button" id="btn-normal" onclick="applyPreset('normal')">Low Risk
+                        Normal</button>
+                    <button class="preset-button" id="btn-monitor" onclick="applyPreset('monitor')">Borderline
+                        Monitor</button>
+                    <button class="preset-button" id="btn-tool" onclick="applyPreset('tool')">Tool Wear
+                        Critical</button>
+                    <button class="preset-button" id="btn-high" onclick="applyPreset('high')">High
+                        Risk/Downtime</button>
+                    <button class="preset-button" id="btn-expensive" onclick="applyPreset('expensive')">Expensive
+                        PM</button>
+                </div>
+            </div>
+
+            <div class="controls-grid">
+                <label style="grid-column: 1 / -1; border-bottom: 1px solid var(--line); padding-bottom: 5px;">Machine
+                    Parameters</label>
+
+                <label>Product Type
+                    <select id="inputType" onchange="onTypeChange()">
+                        <option value="1">Type L (Low Cost Downtime)</option>
+                        <option value="2">Type M (Mid Cost Downtime)</option>
+                        <option value="0">Type H (High Cost Downtime)</option>
+                    </select>
+                </label>
+                <label>Tool Wear [Min]
+                    <input id="inputWear" type="range" min="0" max="250" step="1" value="50"
+                        oninput="onScenarioInputChange()">
+                    <output id="outWear">50 Min</output>
+                </label>
+                <label>Rotational Speed [RPM]
+                    <input id="inputSpeed" type="range" min="1100" max="2900" step="10" value="1500"
+                        oninput="onScenarioInputChange()">
+                    <output id="outSpeed">1500 RPM</output>
+                </label>
+                <label>Torque [Nm]
+                    <input id="inputTorque" type="range" min="10" max="80" step="0.5" value="40"
+                        oninput="onScenarioInputChange()">
+                    <output id="outTorque">10.0 Nm</output>
+                </label>
+                <label>Air Temp [K]
+                    <input id="inputAir" type="range" min="295" max="305" step="0.1" value="298"
+                        oninput="onScenarioInputChange()">
+                    <output id="outAir">298.0 K</output>
+                </label>
+                <label>Process Temp [K]
+                    <input id="inputProcess" type="range" min="305" max="315" step="0.1" value="308"
+                        oninput="onScenarioInputChange()">
+                    <output id="outProcess">308.0 K</output>
+                </label>
+                <label>Downtime Cost / Hr
+                    <input id="inputDowntime" type="range" min="1000" max="1000000" step="1000" value="15000"
+                        oninput="syncDowntime(this.value)">
+                    <output id="outDowntime">฿ 15,000</output>
+                </label>
+                <label>Preventive Cost
+                    <input id="inputPreventive" type="range" min="500" max="1000000" step="500" value="2000"
+                        oninput="syncPreventive(this.value)">
+                    <output id="outPreventive">฿ 2,000</output>
+                </label>
+                <label>Corrective Cost
+                    <input id="inputCorrective" type="range" min="1000" max="1000000" step="1000" value="0"
+                        oninput="syncCorrective(this.value)">
+                    <output id="outCorrective">฿ 0</output>
+                </label>
+            </div>
+
+            <div class="envelope-card"
+                style="background: #f8fafc; border: 1px solid var(--line); border-radius: 8px; padding: 18px; margin-top: 20px; display: flex; flex-direction: column;">
+                <h3
+                    style="margin: 0 0 12px 0; font-size: 0.85rem; text-transform: uppercase; color: var(--muted); display: flex; align-items: center; gap: 8px;">
+                    Machine Operating Envelope
+                </h3>
+
+                <div id="envelopePlot"
+                    style="position: relative; height: 250px; background: #fff; border-radius: 6px; border: 1px solid var(--line); overflow: hidden;">
+                    <canvas id="envelopeCanvas"
+                        style="width: 100%; height: 100%; display: block; image-rendering: pixelated;"></canvas>
+                    <div id="envelopeCrosshair"
+                        style="position: absolute; width: 14px; height: 14px; border: 2px solid white; border-radius: 50%; box-shadow: 0 0 0 2px var(--teal), 0 4px 10px rgba(0,0,0,0.3); transform: translate(-50%, -50%); pointer-events: none; z-index: 10; transition: left 0.1s, top 0.1s;">
+                    </div>
+
+                    <!-- Axis Labels -->
+                    <div
+                        style="position: absolute; bottom: 8px; right: 10px; font-size: 0.65rem; font-weight: 800; color: #1e293b; background: rgba(255,255,255,0.7); padding: 2px 4px; border-radius: 3px;">
+                        Torque [Nm] →</div>
+                    <div
+                        style="position: absolute; top: 10px; left: 10px; font-size: 0.65rem; font-weight: 800; color: #1e293b; background: rgba(255,255,255,0.7); padding: 2px 4px; border-radius: 3px; transform: rotate(90deg); transform-origin: left top; white-space: nowrap;">
+                        Temp Diff [K] →</div>
+
+                    <!-- Quadrant Labels -->
+                    <div
+                        style="position: absolute; bottom: 10px; left: 10px; font-size: 0.6rem; color: var(--green); font-weight: bold; opacity: 0.6;">
+                        SAFE ZONE</div>
+                    <div
+                        style="position: absolute; top: 10px; right: 10px; font-size: 0.6rem; color: var(--red); font-weight: bold; opacity: 0.6;">
+                        DANGER ZONE</div>
+                </div>
+
+                <p style="margin: 12px 0 0 0; font-size: 0.72rem; line-height: 1.4; color: var(--muted);">
+                    <b>Real-time Visual:</b> See the target move as you adjust Torque or Temp. Keep the target in the
+                    <b>Safe Zone</b>.
+                </p>
+            </div>
+
+            <div class="reference-table-container">
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 15px;">
+                    <div>
+                        <h3>Preventive Cost</h3>
+                        <div class="reference-table-wrapper">
+                            <table class="reference-table">
+                                <thead>
+                                    <tr>
+                                        <th>Failure Mode</th>
+                                        <th style="text-align: right;">Cost (฿)</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>OSF (Overstrain Failure)</td>
+                                        <td class="cost-col preventive">15,000</td>
+                                    </tr>
+                                    <tr>
+                                        <td>HDF (Heat Dissipation Failure)</td>
+                                        <td class="cost-col preventive">10,000</td>
+                                    </tr>
+                                    <tr>
+                                        <td>PWF (Power Failure)</td>
+                                        <td class="cost-col preventive">8,000</td>
+                                    </tr>
+                                    <tr>
+                                        <td>RNF (Random Failure)</td>
+                                        <td class="cost-col preventive">5,000</td>
+                                    </tr>
+                                    <tr>
+                                        <td>TWF (Tool Wear Failure)</td>
+                                        <td class="cost-col preventive">3,000</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Default / Normal</td>
+                                        <td class="cost-col preventive">2,000</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div>
+                        <h3>Corrective Cost</h3>
+                        <div class="reference-table-wrapper">
+                            <table class="reference-table">
+                                <thead>
+                                    <tr>
+                                        <th>Failure Mode</th>
+                                        <th style="text-align: right;">Cost (฿)</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>OSF (Overstrain Failure)</td>
+                                        <td class="cost-col corrective">350,000</td>
+                                    </tr>
+                                    <tr>
+                                        <td>PWF (Power Failure)</td>
+                                        <td class="cost-col corrective">200,000</td>
+                                    </tr>
+                                    <tr>
+                                        <td>HDF (Heat Dissipation Failure)</td>
+                                        <td class="cost-col corrective">150,000</td>
+                                    </tr>
+                                    <tr>
+                                        <td>RNF (Random Failure)</td>
+                                        <td class="cost-col corrective">50,000</td>
+                                    </tr>
+                                    <tr>
+                                        <td>TWF (Tool Wear Failure)</td>
+                                        <td class="cost-col corrective">25,000</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Default / Normal</td>
+                                        <td class="cost-col corrective">0</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="scenario-result">
+
+            <div id="costVerdict" class="cost-verdict normal">
+                <div class="cost-text">
+                    <span>Cost Decision</span>
+                    <strong id="verdictText">ML saves ฿ 0</strong>
+                    <div id="verdictCalc"
+                        style="margin-top: 8px; font-size: 0.8rem; color: var(--muted); background: rgba(0,0,0,0.03); padding: 8px; border-radius: 4px;">
+                        No preventive action needed.
+                    </div>
+                </div>
+            </div>
+
+            <div id="alertBox" class="alert-status green">
+                <span class="rule-badge" id="alertRule">Rule 1.1</span>
+                <strong id="alertTitle">Normal</strong>
+                <span class="desc" id="alertDesc">Continue operation</span>
+                <div class="ruleset-tooltip">
+                    <strong
+                        style="display:block; margin-bottom: 8px; font-size: 0.85rem; color: var(--ink);">Rulesets</strong>
+                    <table class="ruleset-table">
+                        <thead>
+                            <tr>
+                                <th>Rule</th>
+                                <th>Probability</th>
+                                <th>Wear</th>
+                                <th>Temp/Load</th>
+                                <th>Decision</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>1.1 Normal</td>
+                                <td>&lt; 0.30</td>
+                                <td>Low/Med</td>
+                                <td>Normal</td>
+                                <td>Continue operation</td>
+                            </tr>
+                            <tr>
+                                <td>1.2 Monitor</td>
+                                <td>0.30 - 0.49</td>
+                                <td>Medium</td>
+                                <td>Normal</td>
+                                <td>Monitor closely</td>
+                            </tr>
+                            <tr>
+                                <td>1.3 Risk Detected</td>
+                                <td>0.50 - 0.79</td>
+                                <td>High</td>
+                                <td>Normal/High</td>
+                                <td>Schedule preventive</td>
+                            </tr>
+                            <tr>
+                                <td>1.4 Tool Critical</td>
+                                <td>&ge; 0.60</td>
+                                <td>Critical</td>
+                                <td>Any</td>
+                                <td>Replace/inspect tool</td>
+                            </tr>
+                            <tr>
+                                <td>1.5 Emergency</td>
+                                <td>&ge; 0.80</td>
+                                <td>Any</td>
+                                <td>Any</td>
+                                <td>Stop machine</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="risk-meter">
+                <span>Predicted Failure Probability</span>
+                <strong id="scenarioProbability">0.0%</strong>
+                <div class="meter-track">
+                    <div id="meterFill"></div>
+                </div>
+            </div>
+
+            <div class="mini-kpis">
+                <div>
+                    <span>Downtime Rate (per hr)</span>
+                    <strong id="kpiDowntimeRate">฿ 15,000</strong>
+                </div>
+                <div>
+                    <span>Assigned Root Cause</span>
+                    <strong id="kpiRootCause" style="color: var(--teal);">None</strong>
+                </div>
+                <div>
+                    <span>Corrective Cost (If Fails)</span>
+                    <strong id="kpiCorrective" style="color: var(--red);">฿ 0</strong>
+                </div>
+                <div>
+                    <span>Preventive Cost (Action)</span>
+                    <strong id="kpiPreventive">฿ 0</strong>
+                </div>
+            </div>
+
+            <div class="panel hover-container">
+                <div
+                    style="font-weight: bold; margin-bottom: 10px; font-size: 0.85rem; color: var(--muted); text-transform: uppercase;">
+                    Z-Score Feature Impact</div>
+                <div id="breakdownChart">
+                </div>
+
+                <!-- Downtime Cost Rate Table -->
+                <div style="margin-top: 25px; border-top: 1px dashed var(--line); padding-top: 15px;">
+                    <div
+                        style="font-weight: bold; margin-bottom: 10px; font-size: 0.75rem; color: var(--muted); text-transform: uppercase;">
+                        Standard Downtime Cost Rates (THB/h)</div>
+                    <table style="width: 100%; font-size: 0.8rem; border-collapse: collapse;">
+                        <tr style="border-bottom: 1px solid #f1f5f9;">
+                            <td style="padding: 8px 0; color: var(--muted);">Type H (High Cost)</td>
+                            <td style="padding: 8px 0; text-align: right; font-weight: bold; color: var(--ink);">฿
+                                150,000</td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid #f1f5f9;">
+                            <td style="padding: 8px 0; color: var(--muted);">Type M (Mid Cost)</td>
+                            <td style="padding: 8px 0; text-align: right; font-weight: bold; color: var(--ink);">฿
+                                50,000</td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid #f1f5f9;">
+                            <td style="padding: 8px 0; color: var(--muted);">Type L (Low Cost)</td>
+                            <td style="padding: 8px 0; text-align: right; font-weight: bold; color: var(--ink);">฿
+                                15,000</td>
+                        </tr>
+                    </table>
+                    <p style="margin: 8px 0 0; font-size: 0.7rem; color: var(--muted); font-style: italic;">Note: Rates
+                        are based on machine category and production impact.</p>
+                </div>
+                <div class="kpi-tooltip"
+                    style="bottom: 100%; top: auto; left: 50%; transform: translateX(-50%); margin-bottom: 15px; width: 450px; max-width: 90vw;">
+                    <strong>SHAP Values / Feature Importance</strong><br>
+                    <img src="SHAP-image.png" alt="SHAP Plot"
+                        style="max-width: 100%; height: auto; margin-top: 8px; border-radius: 4px;">
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <script>
+        // --- Presets Data ---
+        const presetData = {
+            default: { type: "1", air: 298, process: 305, speed: 1200, torque: 20, wear: 0 },
+            normal: { type: "1", air: 298, process: 308, speed: 1500, torque: 40, wear: 50 },
+            monitor: { type: "1", air: 300, process: 310, speed: 1500, torque: 40, wear: 80 },
+            tool: { type: "1", air: 298, process: 308, speed: 1400, torque: 38, wear: 210 },
+            high: { type: "2", air: 302, process: 312, speed: 1300, torque: 68, wear: 150 },
+            expensive: { type: "0", air: 300, process: 312, speed: 1400, torque: 50, wear: 180 }
+        };
+        let selectedFleetSnapshot = null;
+
+        function clearFleetSelection() {
+            selectedFleetSnapshot = null;
+            document.querySelectorAll('#fleetTreemap > div').forEach(d => d.style.border = '2px solid transparent');
+        }
+
+        function moveCostControlsToTradeoff() {
+            const target = document.querySelector('.tradeoff-cost-controls');
+            if (!target) return;
+
+            const downtimeInput = document.getElementById('inputDowntime');
+            const preventiveInput = document.getElementById('inputPreventive');
+            const correctiveInput = document.getElementById('inputCorrective');
+            const labels = [
+                downtimeInput ? downtimeInput.closest('label') : null,
+                preventiveInput ? preventiveInput.closest('label') : null,
+                correctiveInput ? correctiveInput.closest('label') : null
+            ].filter(Boolean);
+
+            if (!labels.length) return;
+            target.replaceChildren(...labels);
+        }
+
+        function moveCostVerdictToTradeoff() {
+            const tradeoffPanel = document.querySelector('.tradeoff-panel');
+            const tradeoffSummary = document.getElementById('tradeoffSummary');
+            const costVerdict = document.getElementById('costVerdict');
+            if (!tradeoffPanel || !tradeoffSummary || !costVerdict) return;
+
+            tradeoffSummary.replaceWith(costVerdict);
+        }
+
+        function onScenarioInputChange() {
+            clearFleetSelection();
+            runSim();
+        }
+
+        function applyPreset(name) {
+            clearFleetSelection();
+            document.querySelectorAll('.preset-button').forEach(btn => btn.classList.remove('active'));
+            document.getElementById('btn-' + name).classList.add('active');
+            const data = presetData[name];
+            document.getElementById('inputType').value = data.type;
+            document.getElementById('inputAir').value = data.air;
+            document.getElementById('inputProcess').value = data.process;
+            document.getElementById('inputSpeed').value = data.speed;
+            document.getElementById('inputTorque').value = data.torque;
+            document.getElementById('inputWear').value = data.wear;
+
+            let downtime = 15000;
+            if (data.type === "0") downtime = 150000;
+            else if (data.type === "2") downtime = 50000;
+            document.getElementById('inputDowntime').value = downtime;
+            document.getElementById('outDowntime').value = "฿ " + downtime.toLocaleString('en-US');
+
+            let pCost = 2000;
+            if (name === "default") pCost = 1000;
+            else if (name === "tool") pCost = 3000;
+            else if (name === "high") pCost = 15000;
+            else if (name === "expensive") pCost = 10000;
+            document.getElementById('inputPreventive').value = pCost;
+            document.getElementById('outPreventive').value = "฿ " + pCost.toLocaleString('en-US');
+
+            let cCost = 0;
+            if (name === "default") cCost = 0;
+            else if (name === "tool") cCost = 25000;
+            else if (name === "high") cCost = 350000;
+            else if (name === "expensive") cCost = 150000;
+            document.getElementById('inputCorrective').value = cCost;
+            document.getElementById('outCorrective').value = "฿ " + cCost.toLocaleString('en-US');
+
+            runSim();
+        }
+
+        function onTypeChange() {
+            clearFleetSelection();
+            const type = document.getElementById('inputType').value;
+            let downtime = 50000;
+            if (type === "0") downtime = 150000;
+            else if (type === "1") downtime = 15000;
+            document.getElementById('inputDowntime').value = downtime;
+            document.getElementById('outDowntime').value = "฿ " + downtime.toLocaleString('en-US');
+            runSim();
+        }
+
+        function formatInput(el) {
+            let val = parseInt(el.value.replace(/,/g, '')) || 0;
+            el.value = val.toLocaleString('en-US');
+        }
+
+        function syncDowntime(val, fromInput = false) {
+            clearFleetSelection();
+            let num = parseInt(val.toString().replace(/,/g, '')) || 0;
+            if (fromInput) document.getElementById('inputDowntime').value = num;
+            else document.getElementById('outDowntime').value = "฿ " + num.toLocaleString('en-US');
+            runSim();
+        }
+
+        function syncPreventive(val, fromInput = false) {
+            clearFleetSelection();
+            let num = parseInt(val.toString().replace(/,/g, '')) || 0;
+            if (fromInput) document.getElementById('inputPreventive').value = num;
+            else document.getElementById('outPreventive').value = "฿ " + num.toLocaleString('en-US');
+            runSim();
+        }
+
+        function syncCorrective(val, fromInput = false) {
+            clearFleetSelection();
+            let num = parseInt(val.toString().replace(/,/g, '')) || 0;
+            if (fromInput) document.getElementById('inputCorrective').value = num;
+            else document.getElementById('outCorrective').value = "฿ " + num.toLocaleString('en-US');
+            runSim();
+        }
+
+        function resetTradeoffCosts() {
+            clearFleetSelection();
+            const type = document.getElementById('inputType').value;
+            let downtime = 50000;
+            if (type === "0") downtime = 150000;
+            else if (type === "1") downtime = 15000;
+
+            document.getElementById('inputDowntime').value = downtime;
+            document.getElementById('outDowntime').value = "฿ " + downtime.toLocaleString('en-US');
+            document.getElementById('inputPreventive').value = 2000;
+            document.getElementById('outPreventive').value = "฿ 2,000";
+            document.getElementById('inputCorrective').value = 0;
+            document.getElementById('outCorrective').value = "฿ 0";
+            runSim();
+        }
+
+        function formatMoney(amount) {
+            return "฿ " + amount.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+        }
+
+        function formatCompactMoney(amount) {
+            if (amount >= 1000000) return "฿ " + (amount / 1000000).toFixed(1) + "M";
+            if (amount >= 1000) return "฿ " + (amount / 1000).toFixed(0) + "k";
+            return formatMoney(amount);
+        }
+
+        function updateEnvelopeHeatmap(currentTorque, currentTempDiff) {
+            const canvas = document.getElementById('envelopeCanvas');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d', { alpha: false });
+
+            const resX = 35;
+            const resY = 35;
+            if (canvas.width !== resX) {
+                canvas.width = resX;
+                canvas.height = resY;
+            }
+
+            const type = parseFloat(document.getElementById('inputType').value);
+            const air = parseFloat(document.getElementById('inputAir').value);
+            const process = parseFloat(document.getElementById('inputProcess').value);
+            const speed = parseFloat(document.getElementById('inputSpeed').value);
+            const wear = parseFloat(document.getElementById('inputWear').value);
+
+            const means = { type: 1.083910, air: 300.459988, process: 310.154992, speed: 1516.141683, torque: 44.918470, wear: 124.742059, tempDiff: 9.695003 };
+            const stds = { type: 0.531968, air: 1.951517, process: 1.324930, speed: 292.915402, torque: 14.067092, wear: 69.869694, tempDiff: 1.057585 };
+            const weights = { intercept: 1.8459, type: -0.4653, air: 0.2239, process: -0.0978, speed: 2.7429, torque: 3.8311, wear: 1.0282, tempDiff: -0.5357 };
+
+            // Calculate "Expected Z" from the hardcoded JS model for current sliders
+            const expectedZ = weights.intercept +
+                ((type - means.type) / stds.type) * weights.type +
+                ((air - means.air) / stds.air) * weights.air +
+                ((process - means.process) / stds.process) * weights.process +
+                ((speed - means.speed) / stds.speed) * weights.speed +
+                ((wear - means.wear) / stds.wear) * weights.wear +
+                ((currentTorque - means.torque) / stds.torque) * weights.torque +
+                ((currentTempDiff - means.tempDiff) / stds.tempDiff) * weights.tempDiff;
+
+            let calibrationOffset = 0;
+            if (selectedFleetSnapshot) {
+                // If a machine from the treemap is selected, we must calibrate the visual
+                // to match the treemap's Ground Truth probability.
+                const targetProb = selectedFleetSnapshot.failureProbability;
+                const targetZ = Math.log(Math.max(0.000001, targetProb) / Math.max(0.000001, 1 - targetProb));
+                calibrationOffset = targetZ - expectedZ;
+            }
+
+            const baseZ = weights.intercept + calibrationOffset +
+                ((type - means.type) / stds.type) * weights.type +
+                ((air - means.air) / stds.air) * weights.air +
+                ((process - means.process) / stds.process) * weights.process +
+                ((speed - means.speed) / stds.speed) * weights.speed +
+                ((wear - means.wear) / stds.wear) * weights.wear;
+
+            const imgData = ctx.createImageData(resX, resY);
+
+            for (let y = 0; y < resY; y++) {
+                for (let x = 0; x < resX; x++) {
+                    const tq = 10 + (x / (resX - 1)) * 70;
+                    const td = 20 - (y / (resY - 1)) * 20;
+
+                    const tqTerm = ((tq - means.torque) / stds.torque) * weights.torque;
+                    const tdTerm = ((td - means.tempDiff) / stds.tempDiff) * weights.tempDiff;
+
+                    const z = baseZ + tqTerm + tdTerm;
+                    const prob = 1 / (1 + Math.exp(-z));
+
+                    const idx = (y * resX + x) * 4;
+
+                    let r, g, b;
+                    if (prob < 0.3) { r = 36; g = 135; b = 93; }
+                    else if (prob < 0.5) { r = 183; g = 121; b = 31; }
+                    else if (prob < 0.6) { r = 232; g = 93; b = 4; }
+                    else if (prob < 0.8) { r = 194; g = 65; b = 63; }
+                    else { r = 153; g = 27; b = 27; }
+
+                    imgData.data[idx] = r;
+                    imgData.data[idx + 1] = g;
+                    imgData.data[idx + 2] = b;
+                    imgData.data[idx + 3] = 255;
+                }
+            }
+            ctx.putImageData(imgData, 0, 0);
+
+            const crosshair = document.getElementById('envelopeCrosshair');
+            if (crosshair) {
+                const px = Math.max(0, Math.min(100, ((currentTorque - 10) / 70) * 100));
+                const py = Math.max(0, Math.min(100, (1 - (currentTempDiff / 20)) * 100));
+                crosshair.style.left = px + '%';
+                crosshair.style.top = py + '%';
+            }
+        }
+
+        let riskTrendChart = null;
+        let riskTrendData = {
+            labels: ["2025-01", "2025-02", "2025-03", "2025-04", "2025-05", "2025-06", "2025-07", "2025-08", "2025-09", "2025-10", "2025-11", "2025-12"],
+            datasets: [
+                { label: 'Tool Wear Failure (TWF)', data: [15, 15, 14, 14, 10, 12, 21, 21, 18, 11, 12, 13], borderColor: '#3b82f6', backgroundColor: '#3b82f6', tension: 0.3, pointRadius: 3 },
+                { label: 'Heat Dissipation Failure (HDF)', data: [34, 43, 51, 44, 46, 49, 43, 42, 31, 40, 35, 34], borderColor: '#ef4444', backgroundColor: '#ef4444', tension: 0.3, pointRadius: 3 },
+                { label: 'Power Failure (PWF)', data: [25, 19, 22, 31, 29, 28, 31, 31, 28, 27, 25, 27], borderColor: '#f59e0b', backgroundColor: '#f59e0b', tension: 0.3, pointRadius: 3 },
+                { label: 'Overstrain Failure (OSF)', data: [35, 32, 42, 36, 46, 41, 51, 55, 39, 26, 37, 30], borderColor: '#8b5cf6', backgroundColor: '#8b5cf6', tension: 0.3, pointRadius: 3 },
+                { label: 'Random Failures (RNF)', data: [1, 0, 1, 1, 0, 1, 1, 0, 0, 2, 0, 0], borderColor: '#10b981', backgroundColor: '#10b981', tension: 0.3, pointRadius: 3 }
+            ]
+        };
+
+        const riskColors = {
+            TWF: '#3b82f6',
+            HDF: '#ef4444',
+            PWF: '#f59e0b',
+            OSF: '#8b5cf6',
+            RNF: '#10b981'
+        };
+
+        const riskLabels = {
+            TWF: 'Tool Wear Failure (TWF)',
+            HDF: 'Heat Dissipation Failure (HDF)',
+            PWF: 'Power Failure (PWF)',
+            OSF: 'Overstrain Failure (OSF)',
+            RNF: 'Random Failures (RNF)'
+        };
+
+        function loadRiskTrendData() {
+            const loadingEl = document.getElementById('trendLoading');
+            if (loadingEl) loadingEl.style.display = 'none';
+            document.getElementById('riskTrendChart').style.display = 'block';
+            initRiskTrendChart();
+        }
+
+        function initRiskTrendChart() {
+            const canvas = document.getElementById('riskTrendChart');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            if (riskTrendChart) riskTrendChart.destroy();
+
+            riskTrendChart = new Chart(ctx, {
+                type: 'line',
+                data: riskTrendData,
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: { mode: 'index', intersect: false },
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: { backgroundColor: 'rgba(30, 41, 59, 0.9)', padding: 12 }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: { color: '#f1f5f9' },
+                            title: { display: true, text: 'Failures Detected (Monthly)', font: { size: 10, weight: 'bold' } }
+                        },
+                        x: {
+                            grid: { display: false },
+                            title: { display: true, text: '2025 Calendar Year', font: { size: 10 } }
+                        }
+                    }
+                }
+            });
+        }
+
+        function toggleRiskSeries(key) {
+            const btn = document.getElementById('toggle-' + key);
+            const fullLabel = riskLabels[key];
+            const dataset = riskTrendChart.data.datasets.find(d => d.label === fullLabel);
+            if (dataset) {
+                dataset.hidden = !dataset.hidden;
+                riskTrendChart.update();
+
+                if (!dataset.hidden) {
+                    btn.style.background = riskColors[key];
+                    btn.style.borderColor = riskColors[key];
+                    btn.style.color = '#fff';
+                    btn.style.filter = 'none';
+                    btn.style.opacity = '1';
+                } else {
+                    btn.style.background = '#f1f5f9';
+                    btn.style.borderColor = '#e2e8f0';
+                    btn.style.color = '#94a3b8';
+                    btn.style.filter = 'grayscale(1)';
+                    btn.style.opacity = '0.6';
+                }
+            }
+        }
+
+
+
+        function runSim() {
+            const type = parseFloat(document.getElementById('inputType').value);
+            const air = parseFloat(document.getElementById('inputAir').value);
+            const process = parseFloat(document.getElementById('inputProcess').value);
+            const speed = parseFloat(document.getElementById('inputSpeed').value);
+            const torque = parseFloat(document.getElementById('inputTorque').value);
+            const wear = parseFloat(document.getElementById('inputWear').value);
+            const tempDiff = process - air;
+            let downtimeRate = parseFloat(document.getElementById('inputDowntime').value) || 0;
+            let pCost = parseFloat(document.getElementById('inputPreventive').value) || 0;
+            let cCost = parseFloat(document.getElementById('inputCorrective').value) || 0;
+
+            // Update Slider Text
+            document.getElementById('outAir').innerText = air.toFixed(1) + ' K';
+            document.getElementById('outProcess').innerText = process.toFixed(1) + ' K';
+            document.getElementById('outSpeed').innerText = speed + ' RPM';
+            document.getElementById('outTorque').innerText = torque.toFixed(1) + ' Nm';
+            document.getElementById('outWear').innerText = wear + ' Min';
+
+            // --- 1. ML Calculation (Scaled Log-Odds) ---
+            const means = { type: 1.083910, air: 300.459988, process: 310.154992, speed: 1516.141683, torque: 44.918470, wear: 124.742059, tempDiff: 9.695003 };
+            const stds = { type: 0.531968, air: 1.951517, process: 1.324930, speed: 292.915402, torque: 14.067092, wear: 69.869694, tempDiff: 1.057585 };
+            const weights = { intercept: 1.8459, type: -0.4653, air: 0.2239, process: -0.0978, speed: 2.7429, torque: 3.8311, wear: 1.0282, tempDiff: -0.5357 };
+
+            const terms = {
+                type: ((type - means.type) / stds.type) * weights.type,
+                air: ((air - means.air) / stds.air) * weights.air,
+                process: ((process - means.process) / stds.process) * weights.process,
+                speed: ((speed - means.speed) / stds.speed) * weights.speed,
+                torque: ((torque - means.torque) / stds.torque) * weights.torque,
+                wear: ((wear - means.wear) / stds.wear) * weights.wear,
+                tempDiff: ((tempDiff - means.tempDiff) / stds.tempDiff) * weights.tempDiff
+            };
+
+            let z = weights.intercept + terms.type + terms.air + terms.process + terms.speed + terms.torque + terms.wear + terms.tempDiff;
+            z = Math.max(-35, Math.min(35, z));
+            let prob = 1 / (1 + Math.exp(-z));
+            if (selectedFleetSnapshot) {
+                prob = selectedFleetSnapshot.failureProbability;
+            }
+            let probPct = prob * 100;
+
+            updateEnvelopeHeatmap(torque, tempDiff);
+
+            // --- 2. Ruleset Engine (1.1 - 1.5) ---
+            let ruleStr, alertTitle, alertDesc, alertClass, rootCauseStr = "None";
+
+            // Find main risk driver from scaled impact
+            let maxImpact = Math.max(terms.torque, terms.tempDiff, terms.wear);
+            if (maxImpact === terms.torque && terms.torque > 0.5) rootCauseStr = "Load Risk (OSF)";
+            else if (maxImpact === terms.tempDiff && terms.tempDiff > 0.5) rootCauseStr = "Temp Risk (HDF)";
+            else if (maxImpact === terms.wear && terms.wear > 0.5) rootCauseStr = "Wear Risk (TWF)";
+            else if (wear > 180) rootCauseStr = "Wear Risk (TWF)";
+
+            if (prob >= 0.80) {
+                ruleStr = "Rule 1.5"; alertTitle = "Emergency"; alertDesc = "Stop machine and inspect immediately"; alertClass = "deep-red";
+            } else if (prob >= 0.60 && wear >= 200) {
+                ruleStr = "Rule 1.4"; alertTitle = "Tool Critical"; alertDesc = "Replace or inspect worn tool"; alertClass = "red";
+            } else if (prob >= 0.50) {
+                ruleStr = "Rule 1.3"; alertTitle = "Risk Detected"; alertDesc = "Schedule preventive maintenance"; alertClass = "orange";
+            } else if (prob >= 0.30) {
+                ruleStr = "Rule 1.2"; alertTitle = "Monitor"; alertDesc = "Monitor closely"; alertClass = "yellow";
+            } else {
+                ruleStr = "Rule 1.1"; alertTitle = "Normal"; alertDesc = "Continue operation"; alertClass = "green"; rootCauseStr = "None";
+            }
+
+            // --- 3. Financial Logic (Dynamic Mapping based on Root Cause) ---
+            const correctiveFixCosts = {
+                "Load Risk (OSF)": 350000,
+                "Temp Risk (HDF)": 150000,
+                "Wear Risk (TWF)": 25000,
+                "Power Failure (PWF)": 200000,
+                "Random Failure (RNF)": 50000,
+                "None": 0
+            };
+
+            // Update cCost if a specific root cause is detected
+            if (rootCauseStr !== "None" && correctiveFixCosts[rootCauseStr]) {
+                cCost = correctiveFixCosts[rootCauseStr];
+                document.getElementById('inputCorrective').value = cCost;
+                document.getElementById('outCorrective').innerText = formatMoney(cCost);
+            }
+
+            let costOfFailure = cCost + (downtimeRate * 4); // Fix Cost + 4h unplanned downtime
+            let costOfAction = pCost + (downtimeRate * 1);  // Preventive Fix + 1h planned downtime
+
+            let savings, decisionClass, verdictTitle, calcText;
+
+            if (prob >= 0.50) {
+                savings = costOfFailure - costOfAction;
+                decisionClass = savings > 0 ? "cost-verdict saving" : "cost-verdict normal";
+                verdictTitle = `ML saves ${formatMoney(Math.max(0, savings))}`;
+                calcText = `
+                    <div style="margin-bottom: 8px;">
+                        <strong>Preventive Cost:</strong><br>
+                        ${formatMoney(pCost)} (Fix) + ${formatMoney(downtimeRate * 1)} (1h Down) = <br>
+                        <strong>${formatMoney(costOfAction)}</strong>
+                    </div>
+                    <div style="color: var(--red);">
+                        <strong style="color: var(--red);">Corrective Cost:</strong><br>
+                        ${formatMoney(cCost)} (Fix) + ${formatMoney(downtimeRate * 4)} (4h Down) = <br>
+                        <strong style="color: var(--red);">${formatMoney(costOfFailure)}</strong>
+                    </div>
+                `;
+            } else {
+                savings = 0;
+                decisionClass = "cost-verdict normal";
+                verdictTitle = `ML saves ฿ 0`;
+                calcText = `No preventive action needed (Failure probability < 50%).`;
+            }
+
+            // --- 4. Update UI ---
+            document.getElementById('costVerdict').className = decisionClass;
+            document.getElementById('verdictText').innerText = verdictTitle;
+            document.getElementById('verdictCalc').innerHTML = calcText;
+
+            document.getElementById('scenarioProbability').innerText = probPct.toFixed(1) + '%';
+            const meterFill = document.getElementById('meterFill');
+            meterFill.style.width = probPct + '%';
+            if (prob >= 0.8) meterFill.style.background = 'var(--deep-red)';
+            else if (prob >= 0.6) meterFill.style.background = 'var(--red)';
+            else if (prob >= 0.5) meterFill.style.background = 'var(--orange)';
+            else if (prob >= 0.3) meterFill.style.background = 'var(--yellow)';
+            else meterFill.style.background = 'var(--green)';
+
+            const alertBox = document.getElementById('alertBox');
+            alertBox.className = 'alert-status ' + alertClass;
+            document.getElementById('alertRule').innerText = ruleStr;
+            document.getElementById('alertTitle').innerText = alertTitle;
+            document.getElementById('alertDesc').innerText = alertDesc;
+
+            document.getElementById('kpiDowntimeRate').innerText = formatMoney(downtimeRate);
+            document.getElementById('kpiRootCause').innerText = rootCauseStr;
+
+            const correctiveEl = document.getElementById('kpiCorrective');
+            const preventiveEl = document.getElementById('kpiPreventive');
+            if (prob >= 0.50) {
+                correctiveEl.parentElement.style.display = 'block';
+                preventiveEl.parentElement.style.display = 'block';
+                correctiveEl.innerText = formatMoney(costOfFailure);
+                preventiveEl.innerText = formatMoney(costOfAction);
+            } else {
+                correctiveEl.parentElement.style.display = 'none';
+                preventiveEl.parentElement.style.display = 'none';
+            }
+
+            // --- 5. Build Diverging Bar Chart ---
+            const chartDiv = document.getElementById('breakdownChart');
+            chartDiv.innerHTML = '';
+            const featureNames = { type: 'Type', air: 'Air Temp', process: 'Process Temp', speed: 'Speed', torque: 'Torque', wear: 'Tool Wear', tempDiff: 'Temp Diff' };
+
+            let maxChartImpact = 4.0;
+
+            // Intercept Row (Removed per request)
+
+            // Features Rows
+            for (let key in terms) {
+                let impact = terms[key];
+                let widthPct = Math.min((Math.abs(impact) / maxChartImpact) * 50, 50);
+                let barClass = impact > 0 ? "bar-pos" : "bar-neg";
+                let valColor = impact > 0 ? 'var(--red)' : 'var(--green)';
+                let sign = impact > 0 ? '+' : '';
+
+                chartDiv.innerHTML += `
+            <div class="impact-row">
+                <div class="impact-name">${featureNames[key]}</div>
+                <div class="bar-wrapper">
+                    <div class="bar-axis"></div>
+                    <div class="bar-fill ${barClass}" style="width: ${widthPct}%;"></div>
+                </div>
+                <div class="impact-val" style="color: ${valColor}">${sign}${impact.toFixed(2)}</div>
+            </div>`;
+            }
+        }
+
+        function loadKpiData() {
+            fetch('machine-failure-prediction-completed.json')
+                .then(response => response.json())
+                .then(data => {
+                    let total_runtime = 0;
+                    let total_downtime = 0;
+                    let total_failures = 0;
+                    let total_ideal_time_hours = 0;
+                    let total_good_units = 0;
+                    let total_units = 0;
+                    let savings = 0;
+
+                    data.forEach(row => {
+                        total_runtime += row['Runtime Hours'] || 0;
+                        total_downtime += row['Downtime Hours'] || 0;
+
+                        if (row['Actual_Machine_failure'] === 1) {
+                            total_failures += 1;
+                        }
+
+                        total_ideal_time_hours += ((row['Total units produced'] || 0) * (row['Ideal cycle time [min/unit]'] || 0)) / 60;
+                        total_good_units += row['Good units produced'] || 0;
+                        total_units += row['Total units produced'] || 0;
+
+                        savings += row['Savings after model [THB]'] || 0;
+                    });
+
+                    const total_time = total_runtime + total_downtime;
+                    const availability = total_time > 0 ? (total_runtime / total_time) : 0;
+                    const mtbf = total_failures > 0 ? (total_runtime / total_failures) : 0;
+                    const performance = total_runtime > 0 ? (total_ideal_time_hours / total_runtime) : 0;
+                    const quality = total_units > 0 ? (total_good_units / total_units) : 0;
+                    const oee = availability * performance * quality;
+
+                    document.getElementById('kpiOeeTop').innerText = (oee * 100).toFixed(2) + '%';
+                    document.getElementById('kpiAvailTop').innerText = (availability * 100).toFixed(2) + '%';
+                    document.getElementById('kpiPerfTop').innerText = (performance * 100).toFixed(2) + '%';
+                    document.getElementById('kpiQualTop').innerText = (quality * 100).toFixed(2) + '%';
+                    document.getElementById('kpiMtbfTop').innerText = mtbf.toLocaleString('en-US', { maximumFractionDigits: 0 });
+                    document.getElementById('kpiSavingsTop').innerText = '฿ ' + (savings / 1000000).toFixed(2) + 'M';
+                })
+                .catch(err => {
+                    console.warn("Using pre-calculated static values", err);
+                    document.getElementById('kpiOeeTop').innerText = '88.33%';
+                    document.getElementById('kpiAvailTop').innerText = '97.87%';
+                    document.getElementById('kpiPerfTop').innerText = '91.99%';
+                    document.getElementById('kpiQualTop').innerText = '98.11%';
+                    document.getElementById('kpiMtbfTop').innerText = '205';
+                    document.getElementById('kpiSavingsTop').innerText = '฿ 506.25M';
+                });
+        }
+
+        // --- 7. Fleet-Level Risk Treemap using embedded real dataset rows ---
+        const fleetRowsData = [
+            {
+                "Type": 1.0,
+                "Air temperature [K]": 302.6,
+                "Process temperature [K]": 312.3,
+                "Rotational speed [rpm]": 1554.0,
+                "Torque [Nm]": 42.0,
+                "Tool wear [min]": 58.0,
+                "TWF": 0.0,
+                "HDF": 0.0,
+                "PWF": 0.0,
+                "OSF": 0.0,
+                "RNF": 0.0,
+                "Temp_diff": 9.7,
+                "Actual_Machine_failure": 0,
+                "Predicted_Machine_failure": 0,
+                "Failure_Probability": 0.0001,
+                "Decision": "Continue operation",
+                "Runtime Hours": 202,
+                "Downtime Hours": 0,
+                "Ideal cycle time [min/unit]": 2,
+                "Expected units per hour": 30,
+                "Total units produced": 5715,
+                "Reject units": 94,
+                "Good units produced": 5621,
+                "Downtime cost rate [THB/h]": 15000,
+                "Corrective maintenance cost [THB]": 0,
+                "Preventive maintenance cost [THB]": 2000,
+                "Actual cost before model [THB]": 0,
+                "Planned Fix Downtime": 0,
+                "Actual cost after model [THB]": 0,
+                "Savings after model [THB]": 0,
+                "Timestamp": "2025-01-01 13:00"
+            },
+            {
+                "Type": 1.0,
+                "Air temperature [K]": 298.8499309553,
+                "Process temperature [K]": 308.3631885874,
+                "Rotational speed [rpm]": 1263.0,
+                "Torque [Nm]": 69.02369187,
+                "Tool wear [min]": 77.0,
+                "TWF": 0.0,
+                "HDF": 0.0,
+                "PWF": 1.0,
+                "OSF": 0.0,
+                "RNF": 0.0,
+                "Temp_diff": 9.5132576321,
+                "Actual_Machine_failure": 1,
+                "Predicted_Machine_failure": 1,
+                "Failure_Probability": 0.9999,
+                "Decision": "Stop machine and inspect immediately",
+                "Runtime Hours": 8,
+                "Downtime Hours": 4,
+                "Ideal cycle time [min/unit]": 2,
+                "Expected units per hour": 30,
+                "Total units produced": 227,
+                "Reject units": 19,
+                "Good units produced": 208,
+                "Downtime cost rate [THB/h]": 15000,
+                "Corrective maintenance cost [THB]": 200000,
+                "Preventive maintenance cost [THB]": 8000,
+                "Actual cost before model [THB]": 260000,
+                "Planned Fix Downtime": 1,
+                "Actual cost after model [THB]": 23000,
+                "Savings after model [THB]": 237000,
+                "Timestamp": "2025-01-01 16:00"
+            },
+            {
+                "Type": 2.0,
+                "Air temperature [K]": 302.5,
+                "Process temperature [K]": 311.9,
+                "Rotational speed [rpm]": 1532.0,
+                "Torque [Nm]": 38.8,
+                "Tool wear [min]": 96.0,
+                "TWF": 0.0,
+                "HDF": 0.0,
+                "PWF": 0.0,
+                "OSF": 0.0,
+                "RNF": 0.0,
+                "Temp_diff": 9.4,
+                "Actual_Machine_failure": 0,
+                "Predicted_Machine_failure": 0,
+                "Failure_Probability": 0.0001,
+                "Decision": "Continue operation",
+                "Runtime Hours": 192,
+                "Downtime Hours": 0,
+                "Ideal cycle time [min/unit]": 5,
+                "Expected units per hour": 12,
+                "Total units produced": 2212,
+                "Reject units": 39,
+                "Good units produced": 2173,
+                "Downtime cost rate [THB/h]": 50000,
+                "Corrective maintenance cost [THB]": 0,
+                "Preventive maintenance cost [THB]": 2000,
+                "Actual cost before model [THB]": 0,
+                "Planned Fix Downtime": 0,
+                "Actual cost after model [THB]": 0,
+                "Savings after model [THB]": 0,
+                "Timestamp": "2025-01-01 20:00"
+            },
+            {
+                "Type": 1.0,
+                "Air temperature [K]": 298.5,
+                "Process temperature [K]": 309.5,
+                "Rotational speed [rpm]": 1738.0,
+                "Torque [Nm]": 25.2,
+                "Tool wear [min]": 49.0,
+                "TWF": 0.0,
+                "HDF": 0.0,
+                "PWF": 0.0,
+                "OSF": 0.0,
+                "RNF": 0.0,
+                "Temp_diff": 11.0,
+                "Actual_Machine_failure": 0,
+                "Predicted_Machine_failure": 0,
+                "Failure_Probability": 0.0028,
+                "Decision": "Continue operation",
+                "Runtime Hours": 114,
+                "Downtime Hours": 0,
+                "Ideal cycle time [min/unit]": 2,
+                "Expected units per hour": 30,
+                "Total units produced": 2962,
+                "Reject units": 57,
+                "Good units produced": 2905,
+                "Downtime cost rate [THB/h]": 15000,
+                "Corrective maintenance cost [THB]": 0,
+                "Preventive maintenance cost [THB]": 2000,
+                "Actual cost before model [THB]": 0,
+                "Planned Fix Downtime": 0,
+                "Actual cost after model [THB]": 0,
+                "Savings after model [THB]": 0,
+                "Timestamp": "2025-01-01 21:00"
+            },
+            {
+                "Type": 1.0,
+                "Air temperature [K]": 297.2141626492,
+                "Process temperature [K]": 308.5531446815,
+                "Rotational speed [rpm]": 1323.0,
+                "Torque [Nm]": 44.583053903,
+                "Tool wear [min]": 206.0,
+                "TWF": 0.0,
+                "HDF": 0.0,
+                "PWF": 0.0,
+                "OSF": 0.0,
+                "RNF": 0.0,
+                "Temp_diff": 11.3389820323,
+                "Actual_Machine_failure": 1,
+                "Predicted_Machine_failure": 1,
+                "Failure_Probability": 0.8713,
+                "Decision": "Stop machine and inspect immediately",
+                "Runtime Hours": 8,
+                "Downtime Hours": 2,
+                "Ideal cycle time [min/unit]": 2,
+                "Expected units per hour": 30,
+                "Total units produced": 216,
+                "Reject units": 37,
+                "Good units produced": 179,
+                "Downtime cost rate [THB/h]": 15000,
+                "Corrective maintenance cost [THB]": 0,
+                "Preventive maintenance cost [THB]": 2000,
+                "Actual cost before model [THB]": 30000,
+                "Planned Fix Downtime": 1,
+                "Actual cost after model [THB]": 17000,
+                "Savings after model [THB]": 13000,
+                "Timestamp": "2025-01-01 21:00"
+            },
+            {
+                "Type": 1.0,
+                "Air temperature [K]": 300.5,
+                "Process temperature [K]": 309.8,
+                "Rotational speed [rpm]": 1550.0,
+                "Torque [Nm]": 37.4,
+                "Tool wear [min]": 148.0,
+                "TWF": 0.0,
+                "HDF": 0.0,
+                "PWF": 0.0,
+                "OSF": 0.0,
+                "RNF": 0.0,
+                "Temp_diff": 9.3,
+                "Actual_Machine_failure": 0,
+                "Predicted_Machine_failure": 0,
+                "Failure_Probability": 0.0029,
+                "Decision": "Continue operation",
+                "Runtime Hours": 171,
+                "Downtime Hours": 0,
+                "Ideal cycle time [min/unit]": 2,
+                "Expected units per hour": 30,
+                "Total units produced": 5055,
+                "Reject units": 37,
+                "Good units produced": 5018,
+                "Downtime cost rate [THB/h]": 15000,
+                "Corrective maintenance cost [THB]": 0,
+                "Preventive maintenance cost [THB]": 2000,
+                "Actual cost before model [THB]": 0,
+                "Planned Fix Downtime": 0,
+                "Actual cost after model [THB]": 0,
+                "Savings after model [THB]": 0,
+                "Timestamp": "2025-01-02 00:00"
+            },
+            {
+                "Type": 1.0,
+                "Air temperature [K]": 301.2637835382,
+                "Process temperature [K]": 310.833147325,
+                "Rotational speed [rpm]": 1719.0,
+                "Torque [Nm]": 29.2635045258,
+                "Tool wear [min]": 220.0,
+                "TWF": 1.0,
+                "HDF": 0.0,
+                "PWF": 0.0,
+                "OSF": 0.0,
+                "RNF": 0.0,
+                "Temp_diff": 9.5693637869,
+                "Actual_Machine_failure": 1,
+                "Predicted_Machine_failure": 1,
+                "Failure_Probability": 1.0,
+                "Decision": "Stop machine and inspect immediately",
+                "Runtime Hours": 5,
+                "Downtime Hours": 5,
+                "Ideal cycle time [min/unit]": 2,
+                "Expected units per hour": 30,
+                "Total units produced": 146,
+                "Reject units": 37,
+                "Good units produced": 109,
+                "Downtime cost rate [THB/h]": 15000,
+                "Corrective maintenance cost [THB]": 25000,
+                "Preventive maintenance cost [THB]": 3000,
+                "Actual cost before model [THB]": 100000,
+                "Planned Fix Downtime": 1,
+                "Actual cost after model [THB]": 18000,
+                "Savings after model [THB]": 82000,
+                "Timestamp": "2025-01-02 01:00"
+            },
+            {
+                "Type": 1.0,
+                "Air temperature [K]": 297.2336810508,
+                "Process temperature [K]": 307.2698430638,
+                "Rotational speed [rpm]": 1248.0,
+                "Torque [Nm]": 72.8266328216,
+                "Tool wear [min]": 83.0,
+                "TWF": 0.0,
+                "HDF": 0.0,
+                "PWF": 1.0,
+                "OSF": 0.0,
+                "RNF": 0.0,
+                "Temp_diff": 10.036162013,
+                "Actual_Machine_failure": 1,
+                "Predicted_Machine_failure": 1,
+                "Failure_Probability": 1.0,
+                "Decision": "Stop machine and inspect immediately",
+                "Runtime Hours": 7,
+                "Downtime Hours": 6,
+                "Ideal cycle time [min/unit]": 2,
+                "Expected units per hour": 30,
+                "Total units produced": 204,
+                "Reject units": 40,
+                "Good units produced": 164,
+                "Downtime cost rate [THB/h]": 15000,
+                "Corrective maintenance cost [THB]": 200000,
+                "Preventive maintenance cost [THB]": 8000,
+                "Actual cost before model [THB]": 290000,
+                "Planned Fix Downtime": 1,
+                "Actual cost after model [THB]": 23000,
+                "Savings after model [THB]": 267000,
+                "Timestamp": "2025-01-02 02:00"
+            },
+            {
+                "Type": 2.0,
+                "Air temperature [K]": 298.9,
+                "Process temperature [K]": 310.0,
+                "Rotational speed [rpm]": 1456.0,
+                "Torque [Nm]": 43.8,
+                "Tool wear [min]": 15.0,
+                "TWF": 0.0,
+                "HDF": 0.0,
+                "PWF": 0.0,
+                "OSF": 0.0,
+                "RNF": 0.0,
+                "Temp_diff": 11.1,
+                "Actual_Machine_failure": 0,
+                "Predicted_Machine_failure": 0,
+                "Failure_Probability": 0.0004,
+                "Decision": "Continue operation",
+                "Runtime Hours": 202,
+                "Downtime Hours": 0,
+                "Ideal cycle time [min/unit]": 5,
+                "Expected units per hour": 12,
+                "Total units produced": 2213,
+                "Reject units": 39,
+                "Good units produced": 2174,
+                "Downtime cost rate [THB/h]": 50000,
+                "Corrective maintenance cost [THB]": 0,
+                "Preventive maintenance cost [THB]": 2000,
+                "Actual cost before model [THB]": 0,
+                "Planned Fix Downtime": 0,
+                "Actual cost after model [THB]": 0,
+                "Savings after model [THB]": 0,
+                "Timestamp": "2025-01-02 03:00"
+            },
+            {
+                "Type": 0.0,
+                "Air temperature [K]": 298.2,
+                "Process temperature [K]": 309.0,
+                "Rotational speed [rpm]": 1562.0,
+                "Torque [Nm]": 37.7,
+                "Tool wear [min]": 36.0,
+                "TWF": 0.0,
+                "HDF": 0.0,
+                "PWF": 0.0,
+                "OSF": 0.0,
+                "RNF": 0.0,
+                "Temp_diff": 10.8,
+                "Actual_Machine_failure": 0,
+                "Predicted_Machine_failure": 0,
+                "Failure_Probability": 0.0002,
+                "Decision": "Continue operation",
+                "Runtime Hours": 221,
+                "Downtime Hours": 0,
+                "Ideal cycle time [min/unit]": 12,
+                "Expected units per hour": 5,
+                "Total units produced": 1071,
+                "Reject units": 16,
+                "Good units produced": 1055,
+                "Downtime cost rate [THB/h]": 150000,
+                "Corrective maintenance cost [THB]": 0,
+                "Preventive maintenance cost [THB]": 2000,
+                "Actual cost before model [THB]": 0,
+                "Planned Fix Downtime": 0,
+                "Actual cost after model [THB]": 0,
+                "Savings after model [THB]": 0,
+                "Timestamp": "2025-01-02 05:00"
+            },
+            {
+                "Type": 1.0,
+                "Air temperature [K]": 303.7902467158,
+                "Process temperature [K]": 313.1039658764,
+                "Rotational speed [rpm]": 1421.0,
+                "Torque [Nm]": 48.473311038,
+                "Tool wear [min]": 214.0,
+                "TWF": 0.0,
+                "HDF": 0.0,
+                "PWF": 0.0,
+                "OSF": 0.0,
+                "RNF": 0.0,
+                "Temp_diff": 9.3137191605,
+                "Actual_Machine_failure": 1,
+                "Predicted_Machine_failure": 1,
+                "Failure_Probability": 0.87,
+                "Decision": "Stop machine and inspect immediately",
+                "Runtime Hours": 5,
+                "Downtime Hours": 2,
+                "Ideal cycle time [min/unit]": 2,
+                "Expected units per hour": 30,
+                "Total units produced": 128,
+                "Reject units": 28,
+                "Good units produced": 100,
+                "Downtime cost rate [THB/h]": 15000,
+                "Corrective maintenance cost [THB]": 0,
+                "Preventive maintenance cost [THB]": 2000,
+                "Actual cost before model [THB]": 30000,
+                "Planned Fix Downtime": 1,
+                "Actual cost after model [THB]": 17000,
+                "Savings after model [THB]": 13000,
+                "Timestamp": "2025-01-02 09:00"
+            },
+            {
+                "Type": 1.0,
+                "Air temperature [K]": 302.2,
+                "Process temperature [K]": 311.1,
+                "Rotational speed [rpm]": 1470.0,
+                "Torque [Nm]": 39.6,
+                "Tool wear [min]": 97.0,
+                "TWF": 0.0,
+                "HDF": 0.0,
+                "PWF": 0.0,
+                "OSF": 0.0,
+                "RNF": 0.0,
+                "Temp_diff": 8.9,
+                "Actual_Machine_failure": 0,
+                "Predicted_Machine_failure": 0,
+                "Failure_Probability": 0.0007,
+                "Decision": "Continue operation",
+                "Runtime Hours": 187,
+                "Downtime Hours": 0,
+                "Ideal cycle time [min/unit]": 2,
+                "Expected units per hour": 30,
+                "Total units produced": 4885,
+                "Reject units": 25,
+                "Good units produced": 4860,
+                "Downtime cost rate [THB/h]": 15000,
+                "Corrective maintenance cost [THB]": 0,
+                "Preventive maintenance cost [THB]": 2000,
+                "Actual cost before model [THB]": 0,
+                "Planned Fix Downtime": 0,
+                "Actual cost after model [THB]": 0,
+                "Savings after model [THB]": 0,
+                "Timestamp": "2025-01-02 11:00"
+            },
+            {
+                "Type": 2.0,
+                "Air temperature [K]": 298.5,
+                "Process temperature [K]": 309.6,
+                "Rotational speed [rpm]": 1509.0,
+                "Torque [Nm]": 47.3,
+                "Tool wear [min]": 2.0,
+                "TWF": 0.0,
+                "HDF": 0.0,
+                "PWF": 0.0,
+                "OSF": 0.0,
+                "RNF": 0.0,
+                "Temp_diff": 11.1,
+                "Actual_Machine_failure": 0,
+                "Predicted_Machine_failure": 0,
+                "Failure_Probability": 0.0002,
+                "Decision": "Continue operation",
+                "Runtime Hours": 216,
+                "Downtime Hours": 0,
+                "Ideal cycle time [min/unit]": 5,
+                "Expected units per hour": 12,
+                "Total units produced": 2353,
+                "Reject units": 38,
+                "Good units produced": 2315,
+                "Downtime cost rate [THB/h]": 50000,
+                "Corrective maintenance cost [THB]": 0,
+                "Preventive maintenance cost [THB]": 2000,
+                "Actual cost before model [THB]": 0,
+                "Planned Fix Downtime": 0,
+                "Actual cost after model [THB]": 0,
+                "Savings after model [THB]": 0,
+                "Timestamp": "2025-01-02 12:00"
+            },
+            {
+                "Type": 1.0,
+                "Air temperature [K]": 298.9482564052,
+                "Process temperature [K]": 309.1316061062,
+                "Rotational speed [rpm]": 1419.0,
+                "Torque [Nm]": 60.7933202392,
+                "Tool wear [min]": 119.0,
+                "TWF": 0.0,
+                "HDF": 0.0,
+                "PWF": 1.0,
+                "OSF": 0.0,
+                "RNF": 0.0,
+                "Temp_diff": 10.183349701,
+                "Actual_Machine_failure": 1,
+                "Predicted_Machine_failure": 1,
+                "Failure_Probability": 1.0,
+                "Decision": "Stop machine and inspect immediately",
+                "Runtime Hours": 4,
+                "Downtime Hours": 6,
+                "Ideal cycle time [min/unit]": 2,
+                "Expected units per hour": 30,
+                "Total units produced": 110,
+                "Reject units": 14,
+                "Good units produced": 96,
+                "Downtime cost rate [THB/h]": 15000,
+                "Corrective maintenance cost [THB]": 200000,
+                "Preventive maintenance cost [THB]": 8000,
+                "Actual cost before model [THB]": 290000,
+                "Planned Fix Downtime": 1,
+                "Actual cost after model [THB]": 23000,
+                "Savings after model [THB]": 267000,
+                "Timestamp": "2025-01-02 16:00"
+            },
+            {
+                "Type": 0.0,
+                "Air temperature [K]": 297.9696217693,
+                "Process temperature [K]": 308.9884686325,
+                "Rotational speed [rpm]": 1541.0,
+                "Torque [Nm]": 36.7210631902,
+                "Tool wear [min]": 208.0,
+                "TWF": 1.0,
+                "HDF": 0.0,
+                "PWF": 0.0,
+                "OSF": 0.0,
+                "RNF": 0.0,
+                "Temp_diff": 11.0188468633,
+                "Actual_Machine_failure": 1,
+                "Predicted_Machine_failure": 1,
+                "Failure_Probability": 0.9874,
+                "Decision": "Stop machine and inspect immediately",
+                "Runtime Hours": 6,
+                "Downtime Hours": 2,
+                "Ideal cycle time [min/unit]": 12,
+                "Expected units per hour": 5,
+                "Total units produced": 26,
+                "Reject units": 26,
+                "Good units produced": 0,
+                "Downtime cost rate [THB/h]": 150000,
+                "Corrective maintenance cost [THB]": 25000,
+                "Preventive maintenance cost [THB]": 3000,
+                "Actual cost before model [THB]": 325000,
+                "Planned Fix Downtime": 1,
+                "Actual cost after model [THB]": 153000,
+                "Savings after model [THB]": 172000,
+                "Timestamp": "2025-01-02 16:00"
+            },
+            {
+                "Type": 1.0,
+                "Air temperature [K]": 298.7,
+                "Process temperature [K]": 309.8,
+                "Rotational speed [rpm]": 1469.0,
+                "Torque [Nm]": 38.4,
+                "Tool wear [min]": 62.0,
+                "TWF": 0.0,
+                "HDF": 0.0,
+                "PWF": 0.0,
+                "OSF": 0.0,
+                "RNF": 0.0,
+                "Temp_diff": 11.1,
+                "Actual_Machine_failure": 0,
+                "Predicted_Machine_failure": 0,
+                "Failure_Probability": 0.0005,
+                "Decision": "Continue operation",
+                "Runtime Hours": 251,
+                "Downtime Hours": 0,
+                "Ideal cycle time [min/unit]": 2,
+                "Expected units per hour": 30,
+                "Total units produced": 6776,
+                "Reject units": 89,
+                "Good units produced": 6687,
+                "Downtime cost rate [THB/h]": 15000,
+                "Corrective maintenance cost [THB]": 0,
+                "Preventive maintenance cost [THB]": 2000,
+                "Actual cost before model [THB]": 0,
+                "Planned Fix Downtime": 0,
+                "Actual cost after model [THB]": 0,
+                "Savings after model [THB]": 0,
+                "Timestamp": "2025-01-02 17:00"
+            },
+            {
+                "Type": 1.0,
+                "Air temperature [K]": 297.5,
+                "Process temperature [K]": 308.8,
+                "Rotational speed [rpm]": 1502.0,
+                "Torque [Nm]": 45.9,
+                "Tool wear [min]": 150.0,
+                "TWF": 0.0,
+                "HDF": 0.0,
+                "PWF": 0.0,
+                "OSF": 0.0,
+                "RNF": 0.0,
+                "Temp_diff": 11.3,
+                "Actual_Machine_failure": 0,
+                "Predicted_Machine_failure": 0,
+                "Failure_Probability": 0.0001,
+                "Decision": "Continue operation",
+                "Runtime Hours": 230,
+                "Downtime Hours": 0,
+                "Ideal cycle time [min/unit]": 2,
+                "Expected units per hour": 30,
+                "Total units produced": 6022,
+                "Reject units": 70,
+                "Good units produced": 5952,
+                "Downtime cost rate [THB/h]": 15000,
+                "Corrective maintenance cost [THB]": 0,
+                "Preventive maintenance cost [THB]": 2000,
+                "Actual cost before model [THB]": 0,
+                "Planned Fix Downtime": 0,
+                "Actual cost after model [THB]": 0,
+                "Savings after model [THB]": 0,
+                "Timestamp": "2025-01-03 00:00"
+            },
+            {
+                "Type": 1.0,
+                "Air temperature [K]": 296.1,
+                "Process temperature [K]": 306.7,
+                "Rotational speed [rpm]": 1409.0,
+                "Torque [Nm]": 42.8,
+                "Tool wear [min]": 134.0,
+                "TWF": 0.0,
+                "HDF": 0.0,
+                "PWF": 0.0,
+                "OSF": 0.0,
+                "RNF": 0.0,
+                "Temp_diff": 10.6,
+                "Actual_Machine_failure": 0,
+                "Predicted_Machine_failure": 0,
+                "Failure_Probability": 0.0001,
+                "Decision": "Continue operation",
+                "Runtime Hours": 249,
+                "Downtime Hours": 0,
+                "Ideal cycle time [min/unit]": 2,
+                "Expected units per hour": 30,
+                "Total units produced": 6861,
+                "Reject units": 35,
+                "Good units produced": 6826,
+                "Downtime cost rate [THB/h]": 15000,
+                "Corrective maintenance cost [THB]": 0,
+                "Preventive maintenance cost [THB]": 2000,
+                "Actual cost before model [THB]": 0,
+                "Planned Fix Downtime": 0,
+                "Actual cost after model [THB]": 0,
+                "Savings after model [THB]": 0,
+                "Timestamp": "2025-01-03 02:00"
+            },
+            {
+                "Type": 1.0,
+                "Air temperature [K]": 301.4048863316,
+                "Process temperature [K]": 310.4091512594,
+                "Rotational speed [rpm]": 1340.0,
+                "Torque [Nm]": 65.4542861525,
+                "Tool wear [min]": 193.0,
+                "TWF": 0.0,
+                "HDF": 0.0,
+                "PWF": 0.0,
+                "OSF": 1.0,
+                "RNF": 0.0,
+                "Temp_diff": 9.0042649278,
+                "Actual_Machine_failure": 1,
+                "Predicted_Machine_failure": 1,
+                "Failure_Probability": 1.0,
+                "Decision": "Stop machine and inspect immediately",
+                "Runtime Hours": 6,
+                "Downtime Hours": 3,
+                "Ideal cycle time [min/unit]": 2,
+                "Expected units per hour": 30,
+                "Total units produced": 173,
+                "Reject units": 34,
+                "Good units produced": 139,
+                "Downtime cost rate [THB/h]": 15000,
+                "Corrective maintenance cost [THB]": 350000,
+                "Preventive maintenance cost [THB]": 15000,
+                "Actual cost before model [THB]": 395000,
+                "Planned Fix Downtime": 1,
+                "Actual cost after model [THB]": 30000,
+                "Savings after model [THB]": 365000,
+                "Timestamp": "2025-01-03 08:00"
+            },
+            {
+                "Type": 1.0,
+                "Air temperature [K]": 298.1,
+                "Process temperature [K]": 308.8,
+                "Rotational speed [rpm]": 1432.0,
+                "Torque [Nm]": 43.4,
+                "Tool wear [min]": 68.0,
+                "TWF": 0.0,
+                "HDF": 0.0,
+                "PWF": 0.0,
+                "OSF": 0.0,
+                "RNF": 0.0,
+                "Temp_diff": 10.7,
+                "Actual_Machine_failure": 0,
+                "Predicted_Machine_failure": 0,
+                "Failure_Probability": 0.0011,
+                "Decision": "Continue operation",
+                "Runtime Hours": 101,
+                "Downtime Hours": 0,
+                "Ideal cycle time [min/unit]": 2,
+                "Expected units per hour": 30,
+                "Total units produced": 2856,
+                "Reject units": 51,
+                "Good units produced": 2805,
+                "Downtime cost rate [THB/h]": 15000,
+                "Corrective maintenance cost [THB]": 0,
+                "Preventive maintenance cost [THB]": 2000,
+                "Actual cost before model [THB]": 0,
+                "Planned Fix Downtime": 0,
+                "Actual cost after model [THB]": 0,
+                "Savings after model [THB]": 0,
+                "Timestamp": "2025-01-03 10:00"
+            },
+            {
+                "Type": 1.0,
+                "Air temperature [K]": 301.0,
+                "Process temperature [K]": 312.1,
+                "Rotational speed [rpm]": 1377.0,
+                "Torque [Nm]": 49.9,
+                "Tool wear [min]": 48.0,
+                "TWF": 0.0,
+                "HDF": 0.0,
+                "PWF": 0.0,
+                "OSF": 0.0,
+                "RNF": 0.0,
+                "Temp_diff": 11.1,
+                "Actual_Machine_failure": 0,
+                "Predicted_Machine_failure": 0,
+                "Failure_Probability": 0.0003,
+                "Decision": "Continue operation",
+                "Runtime Hours": 187,
+                "Downtime Hours": 0,
+                "Ideal cycle time [min/unit]": 2,
+                "Expected units per hour": 30,
+                "Total units produced": 4853,
+                "Reject units": 73,
+                "Good units produced": 4780,
+                "Downtime cost rate [THB/h]": 15000,
+                "Corrective maintenance cost [THB]": 0,
+                "Preventive maintenance cost [THB]": 2000,
+                "Actual cost before model [THB]": 0,
+                "Planned Fix Downtime": 0,
+                "Actual cost after model [THB]": 0,
+                "Savings after model [THB]": 0,
+                "Timestamp": "2025-01-03 10:00"
+            },
+            {
+                "Type": 2.0,
+                "Air temperature [K]": 302.1,
+                "Process temperature [K]": 311.5,
+                "Rotational speed [rpm]": 1635.0,
+                "Torque [Nm]": 31.6,
+                "Tool wear [min]": 23.0,
+                "TWF": 0.0,
+                "HDF": 0.0,
+                "PWF": 0.0,
+                "OSF": 0.0,
+                "RNF": 0.0,
+                "Temp_diff": 9.4,
+                "Actual_Machine_failure": 0,
+                "Predicted_Machine_failure": 0,
+                "Failure_Probability": 0.0,
+                "Decision": "Continue operation",
+                "Runtime Hours": 257,
+                "Downtime Hours": 0,
+                "Ideal cycle time [min/unit]": 5,
+                "Expected units per hour": 12,
+                "Total units produced": 2831,
+                "Reject units": 37,
+                "Good units produced": 2794,
+                "Downtime cost rate [THB/h]": 50000,
+                "Corrective maintenance cost [THB]": 0,
+                "Preventive maintenance cost [THB]": 2000,
+                "Actual cost before model [THB]": 0,
+                "Planned Fix Downtime": 0,
+                "Actual cost after model [THB]": 0,
+                "Savings after model [THB]": 0,
+                "Timestamp": "2025-01-03 14:00"
+            },
+            {
+                "Type": 1.0,
+                "Air temperature [K]": 301.3744869136,
+                "Process temperature [K]": 309.9850436213,
+                "Rotational speed [rpm]": 1260.0,
+                "Torque [Nm]": 64.2401744852,
+                "Tool wear [min]": 19.0,
+                "TWF": 0.0,
+                "HDF": 0.0,
+                "PWF": 0.0,
+                "OSF": 0.0,
+                "RNF": 0.0,
+                "Temp_diff": 8.6105567077,
+                "Actual_Machine_failure": 1,
+                "Predicted_Machine_failure": 1,
+                "Failure_Probability": 0.9994,
+                "Decision": "Stop machine and inspect immediately",
+                "Runtime Hours": 7,
+                "Downtime Hours": 3,
+                "Ideal cycle time [min/unit]": 2,
+                "Expected units per hour": 30,
+                "Total units produced": 199,
+                "Reject units": 34,
+                "Good units produced": 165,
+                "Downtime cost rate [THB/h]": 15000,
+                "Corrective maintenance cost [THB]": 0,
+                "Preventive maintenance cost [THB]": 2000,
+                "Actual cost before model [THB]": 45000,
+                "Planned Fix Downtime": 1,
+                "Actual cost after model [THB]": 17000,
+                "Savings after model [THB]": 28000,
+                "Timestamp": "2025-01-03 18:00"
+            },
+            {
+                "Type": 2.0,
+                "Air temperature [K]": 302.7393055186,
+                "Process temperature [K]": 311.1635833112,
+                "Rotational speed [rpm]": 1365.0,
+                "Torque [Nm]": 45.4497082115,
+                "Tool wear [min]": 63.0,
+                "TWF": 0.0,
+                "HDF": 1.0,
+                "PWF": 0.0,
+                "OSF": 0.0,
+                "RNF": 0.0,
+                "Temp_diff": 8.4242777926,
+                "Actual_Machine_failure": 1,
+                "Predicted_Machine_failure": 1,
+                "Failure_Probability": 0.9998,
+                "Decision": "Stop machine and inspect immediately",
+                "Runtime Hours": 5,
+                "Downtime Hours": 6,
+                "Ideal cycle time [min/unit]": 5,
+                "Expected units per hour": 12,
+                "Total units produced": 55,
+                "Reject units": 30,
+                "Good units produced": 25,
+                "Downtime cost rate [THB/h]": 50000,
+                "Corrective maintenance cost [THB]": 150000,
+                "Preventive maintenance cost [THB]": 10000,
+                "Actual cost before model [THB]": 450000,
+                "Planned Fix Downtime": 1,
+                "Actual cost after model [THB]": 60000,
+                "Savings after model [THB]": 390000,
+                "Timestamp": "2025-01-03 22:00"
+            },
+            {
+                "Type": 1.0,
+                "Air temperature [K]": 300.7902705515,
+                "Process temperature [K]": 309.7264702172,
+                "Rotational speed [rpm]": 1346.0,
+                "Torque [Nm]": 58.0013590642,
+                "Tool wear [min]": 189.0,
+                "TWF": 0.0,
+                "HDF": 0.0,
+                "PWF": 0.0,
+                "OSF": 0.0,
+                "RNF": 0.0,
+                "Temp_diff": 8.9361996658,
+                "Actual_Machine_failure": 1,
+                "Predicted_Machine_failure": 1,
+                "Failure_Probability": 0.998,
+                "Decision": "Stop machine and inspect immediately",
+                "Runtime Hours": 1,
+                "Downtime Hours": 6,
+                "Ideal cycle time [min/unit]": 2,
+                "Expected units per hour": 30,
+                "Total units produced": 27,
+                "Reject units": 26,
+                "Good units produced": 1,
+                "Downtime cost rate [THB/h]": 15000,
+                "Corrective maintenance cost [THB]": 0,
+                "Preventive maintenance cost [THB]": 2000,
+                "Actual cost before model [THB]": 90000,
+                "Planned Fix Downtime": 1,
+                "Actual cost after model [THB]": 17000,
+                "Savings after model [THB]": 73000,
+                "Timestamp": "2025-01-03 22:00"
+            },
+            {
+                "Type": 1.0,
+                "Air temperature [K]": 300.7086582079,
+                "Process temperature [K]": 309.818816865,
+                "Rotational speed [rpm]": 1326.0,
+                "Torque [Nm]": 49.0421350776,
+                "Tool wear [min]": 207.0,
+                "TWF": 0.0,
+                "HDF": 0.0,
+                "PWF": 0.0,
+                "OSF": 0.0,
+                "RNF": 0.0,
+                "Temp_diff": 9.1101586571,
+                "Actual_Machine_failure": 1,
+                "Predicted_Machine_failure": 1,
+                "Failure_Probability": 0.9192,
+                "Decision": "Stop machine and inspect immediately",
+                "Runtime Hours": 8,
+                "Downtime Hours": 4,
+                "Ideal cycle time [min/unit]": 2,
+                "Expected units per hour": 30,
+                "Total units produced": 224,
+                "Reject units": 15,
+                "Good units produced": 209,
+                "Downtime cost rate [THB/h]": 15000,
+                "Corrective maintenance cost [THB]": 0,
+                "Preventive maintenance cost [THB]": 2000,
+                "Actual cost before model [THB]": 60000,
+                "Planned Fix Downtime": 1,
+                "Actual cost after model [THB]": 17000,
+                "Savings after model [THB]": 43000,
+                "Timestamp": "2025-01-04 00:00"
+            },
+            {
+                "Type": 2.0,
+                "Air temperature [K]": 302.8885300279,
+                "Process temperature [K]": 311.4590200186,
+                "Rotational speed [rpm]": 1314.0,
+                "Torque [Nm]": 55.1338347687,
+                "Tool wear [min]": 70.0,
+                "TWF": 0.0,
+                "HDF": 0.0,
+                "PWF": 0.0,
+                "OSF": 0.0,
+                "RNF": 0.0,
+                "Temp_diff": 8.5704899907,
+                "Actual_Machine_failure": 1,
+                "Predicted_Machine_failure": 1,
+                "Failure_Probability": 0.995,
+                "Decision": "Stop machine and inspect immediately",
+                "Runtime Hours": 4,
+                "Downtime Hours": 7,
+                "Ideal cycle time [min/unit]": 5,
+                "Expected units per hour": 12,
+                "Total units produced": 47,
+                "Reject units": 27,
+                "Good units produced": 20,
+                "Downtime cost rate [THB/h]": 50000,
+                "Corrective maintenance cost [THB]": 0,
+                "Preventive maintenance cost [THB]": 2000,
+                "Actual cost before model [THB]": 350000,
+                "Planned Fix Downtime": 1,
+                "Actual cost after model [THB]": 52000,
+                "Savings after model [THB]": 298000,
+                "Timestamp": "2025-01-04 03:00"
+            },
+            {
+                "Type": 1.0,
+                "Air temperature [K]": 304.3,
+                "Process temperature [K]": 313.5,
+                "Rotational speed [rpm]": 1452.0,
+                "Torque [Nm]": 41.5,
+                "Tool wear [min]": 15.0,
+                "TWF": 0.0,
+                "HDF": 0.0,
+                "PWF": 0.0,
+                "OSF": 0.0,
+                "RNF": 0.0,
+                "Temp_diff": 9.2,
+                "Actual_Machine_failure": 0,
+                "Predicted_Machine_failure": 0,
+                "Failure_Probability": 0.0002,
+                "Decision": "Continue operation",
+                "Runtime Hours": 260,
+                "Downtime Hours": 0,
+                "Ideal cycle time [min/unit]": 2,
+                "Expected units per hour": 30,
+                "Total units produced": 6733,
+                "Reject units": 92,
+                "Good units produced": 6641,
+                "Downtime cost rate [THB/h]": 15000,
+                "Corrective maintenance cost [THB]": 0,
+                "Preventive maintenance cost [THB]": 2000,
+                "Actual cost before model [THB]": 0,
+                "Planned Fix Downtime": 0,
+                "Actual cost after model [THB]": 0,
+                "Savings after model [THB]": 0,
+                "Timestamp": "2025-01-04 07:00"
+            },
+            {
+                "Type": 1.0,
+                "Air temperature [K]": 302.7,
+                "Process temperature [K]": 312.2,
+                "Rotational speed [rpm]": 1572.0,
+                "Torque [Nm]": 34.4,
+                "Tool wear [min]": 228.0,
+                "TWF": 0.0,
+                "HDF": 0.0,
+                "PWF": 0.0,
+                "OSF": 0.0,
+                "RNF": 0.0,
+                "Temp_diff": 9.5,
+                "Actual_Machine_failure": 0,
+                "Predicted_Machine_failure": 0,
+                "Failure_Probability": 0.0013,
+                "Decision": "Continue operation",
+                "Runtime Hours": 157,
+                "Downtime Hours": 0,
+                "Ideal cycle time [min/unit]": 2,
+                "Expected units per hour": 30,
+                "Total units produced": 4260,
+                "Reject units": 68,
+                "Good units produced": 4192,
+                "Downtime cost rate [THB/h]": 15000,
+                "Corrective maintenance cost [THB]": 0,
+                "Preventive maintenance cost [THB]": 2000,
+                "Actual cost before model [THB]": 0,
+                "Planned Fix Downtime": 0,
+                "Actual cost after model [THB]": 0,
+                "Savings after model [THB]": 0,
+                "Timestamp": "2025-01-04 08:00"
+            },
+            {
+                "Type": 1.0,
+                "Air temperature [K]": 302.0547312882,
+                "Process temperature [K]": 310.4309462576,
+                "Rotational speed [rpm]": 1370.0,
+                "Torque [Nm]": 49.8432245413,
+                "Tool wear [min]": 150.0,
+                "TWF": 0.0,
+                "HDF": 1.0,
+                "PWF": 0.0,
+                "OSF": 0.0,
+                "RNF": 0.0,
+                "Temp_diff": 8.3762149694,
+                "Actual_Machine_failure": 1,
+                "Predicted_Machine_failure": 1,
+                "Failure_Probability": 0.9998,
+                "Decision": "Stop machine and inspect immediately",
+                "Runtime Hours": 1,
+                "Downtime Hours": 3,
+                "Ideal cycle time [min/unit]": 2,
+                "Expected units per hour": 30,
+                "Total units produced": 27,
+                "Reject units": 16,
+                "Good units produced": 11,
+                "Downtime cost rate [THB/h]": 15000,
+                "Corrective maintenance cost [THB]": 150000,
+                "Preventive maintenance cost [THB]": 10000,
+                "Actual cost before model [THB]": 195000,
+                "Planned Fix Downtime": 1,
+                "Actual cost after model [THB]": 25000,
+                "Savings after model [THB]": 170000,
+                "Timestamp": "2025-01-04 11:00"
+            },
+            {
+                "Type": 1.0,
+                "Air temperature [K]": 302.1149156288,
+                "Process temperature [K]": 310.071932503,
+                "Rotational speed [rpm]": 1375.0,
+                "Torque [Nm]": 50.9930212936,
+                "Tool wear [min]": 173.0,
+                "TWF": 0.0,
+                "HDF": 1.0,
+                "PWF": 0.0,
+                "OSF": 0.0,
+                "RNF": 0.0,
+                "Temp_diff": 7.9570168742,
+                "Actual_Machine_failure": 1,
+                "Predicted_Machine_failure": 1,
+                "Failure_Probability": 0.9995,
+                "Decision": "Stop machine and inspect immediately",
+                "Runtime Hours": 3,
+                "Downtime Hours": 7,
+                "Ideal cycle time [min/unit]": 2,
+                "Expected units per hour": 30,
+                "Total units produced": 83,
+                "Reject units": 34,
+                "Good units produced": 49,
+                "Downtime cost rate [THB/h]": 15000,
+                "Corrective maintenance cost [THB]": 150000,
+                "Preventive maintenance cost [THB]": 10000,
+                "Actual cost before model [THB]": 255000,
+                "Planned Fix Downtime": 1,
+                "Actual cost after model [THB]": 25000,
+                "Savings after model [THB]": 230000,
+                "Timestamp": "2025-01-04 16:00"
+            }
+        ];
+        const costSummaryData = { "monthly": [{ "month": "2025-01", "totalBefore": 43415000, "totalAfter": 6149000, "totalSavings": 37266000, "preventive": 1518000, "corrective": 22575000 }, { "month": "2025-02", "totalBefore": 46050000, "totalAfter": 7276000, "totalSavings": 38774000, "preventive": 1525000, "corrective": 21625000 }, { "month": "2025-03", "totalBefore": 48415000, "totalAfter": 6294000, "totalSavings": 42121000, "preventive": 1736000, "corrective": 27100000 }, { "month": "2025-04", "totalBefore": 48360000, "totalAfter": 6358000, "totalSavings": 42002000, "preventive": 1672000, "corrective": 25750000 }, { "month": "2025-05", "totalBefore": 53195000, "totalAfter": 6911000, "totalSavings": 46284000, "preventive": 1834000, "corrective": 28750000 }, { "month": "2025-06", "totalBefore": 52555000, "totalAfter": 6910000, "totalSavings": 45645000, "preventive": 1763000, "corrective": 27400000 }, { "month": "2025-07", "totalBefore": 56420000, "totalAfter": 8056000, "totalSavings": 48364000, "preventive": 1810000, "corrective": 30525000 }, { "month": "2025-08", "totalBefore": 57770000, "totalAfter": 7568000, "totalSavings": 50202000, "preventive": 1954000, "corrective": 32275000 }, { "month": "2025-09", "totalBefore": 52465000, "totalAfter": 7170000, "totalSavings": 45295000, "preventive": 1575000, "corrective": 23950000 }, { "month": "2025-10", "totalBefore": 36135000, "totalAfter": 4833000, "totalSavings": 31302000, "preventive": 1422000, "corrective": 20450000 }, { "month": "2025-11", "totalBefore": 43785000, "totalAfter": 6103000, "totalSavings": 37682000, "preventive": 1551000, "corrective": 23350000 }, { "month": "2025-12", "totalBefore": 48385000, "totalAfter": 7068000, "totalSavings": 41317000, "preventive": 1429000, "corrective": 21125000 }], "byType": [{ "type": "0.0", "totalBefore": 163700000, "totalAfter": 34727000, "totalSavings": 128973000, "preventive": 1641000, "corrective": 19850000 }, { "type": "1.0", "totalBefore": 371550000, "totalAfter": 37676000, "totalSavings": 333874000, "preventive": 15959000, "corrective": 266775000 }, { "type": "2.0", "totalBefore": 51700000, "totalAfter": 8293000, "totalSavings": 43407000, "preventive": 2189000, "corrective": 18250000 }] };
+
+        function formatMonthLabel(monthKey) {
+            const [year, month] = monthKey.split('-').map(Number);
+            return new Date(year, month - 1, 1).toLocaleDateString('en-US', { month: 'short' });
+        }
+
+        function getMachineTypeLabel(typeKey) {
+            if (typeKey === '0.0') return 'Type H';
+            if (typeKey === '1.0') return 'Type L';
+            if (typeKey === '2.0') return 'Type M';
+            return `Type ${typeKey}`;
+        }
+
+        function renderSummaryBars(containerId, items, labelFormatter) {
+            const container = document.getElementById(containerId);
+            const maxValue = Math.max(...items.map(item => Math.max(item.totalAfter, item.totalSavings, item.totalBefore)), 1);
+
+            container.innerHTML = items.map(item => {
+                const spentWidth = (item.totalAfter / maxValue) * 100;
+                const savingsWidth = (item.totalSavings / maxValue) * 100;
+                const label = labelFormatter(item);
+                return `
+                    <div class="summary-row" title="Before: ${formatMoney(item.totalBefore)} | After: ${formatMoney(item.totalAfter)} | Savings: ${formatMoney(item.totalSavings)}">
+                        <label>${label}</label>
+                        <div class="summary-track">
+                            <div class="savings-bar" style="width: ${savingsWidth}%;"></div>
+                            <div class="spent-bar" style="width: ${spentWidth}%;"></div>
+                        </div>
+                        <div class="summary-value">${formatCompactMoney(item.totalAfter)}</div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function renderCostSummary() {
+            const totals = costSummaryData.monthly.reduce((acc, item) => {
+                acc.before += item.totalBefore;
+                acc.after += item.totalAfter;
+                acc.savings += item.totalSavings;
+                return acc;
+            }, { before: 0, after: 0, savings: 0 });
+
+            document.getElementById('summaryTotalBefore').innerText = formatMoney(Math.round(totals.before));
+            document.getElementById('summaryTotalAfter').innerText = formatMoney(Math.round(totals.after));
+            document.getElementById('summaryTotalSavings').innerText = formatMoney(Math.round(totals.savings));
+
+            renderSummaryBars('monthlyCostBars', costSummaryData.monthly, item => formatMonthLabel(item.month));
+            renderSummaryBars('typeCostBars', costSummaryData.byType, item => getMachineTypeLabel(item.type));
+            const totalText = `Sum check: After ${formatMoney(Math.round(totals.after))} | Before ${formatMoney(Math.round(totals.before))} | Savings ${formatMoney(Math.round(totals.savings))}`;
+            document.getElementById('monthlyTotalsLine').innerText = totalText;
+            document.getElementById('typeTotalsLine').innerText = totalText;
+        }
+
+
+
+        function generateFleet() {
+            const fleetDiv = document.getElementById('fleetTreemap');
+            fleetDiv.innerHTML = '';
+
+            fleetRowsData.forEach((row, index) => {
+                const type = Number(row['Type'] ?? 1);
+                const air = Number(row['Air temperature [K]'] ?? 298);
+                const process = Number(row['Process temperature [K]'] ?? air + 10);
+                const speed = Number(row['Rotational speed [rpm]'] ?? 1500);
+                const torque = Number(row['Torque [Nm]'] ?? 40);
+                const wear = Number(row['Tool wear [min]'] ?? 50);
+                const prob = Number(row['Failure_Probability'] ?? 0);
+                const downtimeRate = Number(row['Downtime cost rate [THB/h]'] ?? 15000);
+                const preventiveCost = Number(row['Preventive maintenance cost [THB]'] ?? 2000);
+                const correctiveCost = Number(row['Corrective maintenance cost [THB]'] ?? 0);
+                const timestamp = row['Timestamp'] || `Row ${index + 1}`;
+                const decision = row['Decision'] || 'No decision';
+
+                let color = 'var(--green)';
+                if (prob >= 0.8) color = 'var(--deep-red)';
+                else if (prob >= 0.6) color = 'var(--red)';
+                else if (prob >= 0.5) color = 'var(--orange)';
+                else if (prob >= 0.3) color = 'var(--yellow)';
+
+                const flexGrow = Math.max(1, Math.round(downtimeRate / 15000));
+                const minHeight = downtimeRate >= 150000 ? '90px' : downtimeRate >= 50000 ? '60px' : '40px';
+                const costStr = `${Math.round(downtimeRate / 1000)}k/h`;
+
+                const block = document.createElement('div');
+                block.style.cssText = `
+                    flex-grow: ${flexGrow};
+                    min-height: ${minHeight};
+                    background: ${color};
+                    border-radius: 4px;
+                    cursor: pointer;
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    justify-content: center;
+                    color: white;
+                    font-weight: bold;
+                    font-size: 0.75rem;
+                    min-width: 60px;
+                    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+                    transition: transform 0.1s, box-shadow 0.1s, border 0.1s;
+                    border: 2px solid transparent;
+                `;
+
+                block.title = `${timestamp}\nFailure Probability: ${(prob * 100).toFixed(2)}%\nDecision: ${decision}`;
+                block.innerHTML = `
+                    <span style="font-size: 0.9rem;">M-${index + 1}</span>
+                    <span style="font-size: 0.65rem; opacity: 0.8;">${costStr}</span>
+                    <span style="font-size: 0.65rem; opacity: 0.9;">${(prob * 100).toFixed(1)}%</span>
+                `;
+
+                block.onmouseover = () => {
+                    block.style.transform = 'scale(1.05)';
+                    block.style.boxShadow = '0 4px 8px rgba(0,0,0,0.2)';
+                };
+                block.onmouseout = () => {
+                    block.style.transform = 'scale(1)';
+                    block.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
+                };
+
+                block.onclick = () => {
+                    clearFleetSelection();
+                    block.style.border = '3px solid #1d2428';
+                    selectedFleetSnapshot = {
+                        type,
+                        air,
+                        process,
+                        speed,
+                        torque,
+                        wear,
+                        downtimeRate,
+                        preventiveCost,
+                        correctiveCost,
+                        failureProbability: prob
+                    };
+
+                    document.getElementById('inputType').value = type;
+                    document.getElementById('inputWear').value = wear.toFixed(0);
+                    document.getElementById('inputTorque').value = torque.toFixed(1);
+                    document.getElementById('inputSpeed').value = speed.toFixed(0);
+                    document.getElementById('inputAir').value = air.toFixed(1);
+                    document.getElementById('inputProcess').value = process.toFixed(1);
+                    document.getElementById('inputDowntime').value = downtimeRate;
+                    document.getElementById('outDowntime').value = '฿ ' + downtimeRate.toLocaleString('en-US');
+                    document.getElementById('inputPreventive').value = preventiveCost;
+                    document.getElementById('outPreventive').value = '฿ ' + preventiveCost.toLocaleString('en-US');
+                    document.getElementById('inputCorrective').value = correctiveCost;
+                    document.getElementById('outCorrective').value = '฿ ' + correctiveCost.toLocaleString('en-US');
+
+                    document.querySelectorAll('.preset-button').forEach(btn => btn.classList.remove('active'));
+                    runSim();
+                    document.getElementById('costVerdict').scrollIntoView({ behavior: 'smooth', block: 'center' });
+                };
+
+                fleetDiv.appendChild(block);
+            });
+        }
+
+        moveCostControlsToTradeoff();
+        moveCostVerdictToTradeoff();
+        generateFleet();
+
+        // Initialize
+        applyPreset('default');
+        loadKpiData();
+        loadRiskTrendData();
+        renderCostSummary();
+    </script>
+</body>
+
+</html>
